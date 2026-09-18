@@ -111,9 +111,19 @@ app.get("/api/standings/:comp", async (req, res) => {
     const response = await apiGet(`/standings?league=${leagueId}&season=${season}`);
 
     const groups = response?.[0]?.league?.standings || [];
-    // Standings CAN/qualifs sont souvent divisees en plusieurs groupes ; on les fusionne
-    // et on garde le nom du groupe pour l'affichage.
-    const teams = groups.flat().map(row => ({
+    // Une competition peut avoir plusieurs groupes/poules (CAN, qualifs...).
+    // On ne les fusionne plus (ca melangeait les classements) : on garde celui
+    // qui contient la Cote d'Ivoire si elle y participe, sinon le premier.
+    let selected = groups[0] || [];
+    if (groups.length > 1) {
+      const ciGroup = groups.find(g =>
+        g.some(row => /ivoire|ivory coast/i.test(row.team.name))
+      );
+      if (ciGroup) selected = ciGroup;
+    }
+    const groupLabel = selected[0]?.group || null;
+
+    const teams = selected.map(row => ({
       emoji: null,
       logo: row.team.logo,
       name: row.team.name,
@@ -126,7 +136,7 @@ app.get("/api/standings/:comp", async (req, res) => {
       pts: row.points
     }));
 
-    const payload = { comp: compId, label: name, season, teams, updatedAt: new Date().toISOString() };
+    const payload = { comp: compId, label: name, season, group: groupLabel, teams, updatedAt: new Date().toISOString() };
     cacheSet(cacheKey, payload, 15 * 60 * 1000); // 15 min
     res.json(payload);
   } catch (err) {
@@ -172,6 +182,36 @@ app.get("/api/fixtures/:comp", async (req, res) => {
 });
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+// GET /api/live -> tous les matchs en direct, toutes competitions confondues
+app.get("/api/live", async (req, res) => {
+  const cacheKey = "live:all";
+  const cached = cacheGet(cacheKey);
+  if (cached) return res.json(cached);
+
+  try {
+    const response = await apiGet(`/fixtures?live=all`);
+    const matches = (response || []).slice(0, 40).map(f => ({
+      date: f.fixture.date,
+      status: f.fixture.status.short,
+      elapsed: f.fixture.status.elapsed,
+      home: f.teams.home.name,
+      away: f.teams.away.name,
+      homeLogo: f.teams.home.logo,
+      awayLogo: f.teams.away.logo,
+      homeScore: f.goals.home,
+      awayScore: f.goals.away,
+      comp: f.league.name,
+      country: f.league.country
+    }));
+    const payload = { matches, updatedAt: new Date().toISOString() };
+    cacheSet(cacheKey, payload, 60 * 1000); // 60s : donnees live, cache court
+    res.json(payload);
+  } catch (err) {
+    console.error(err.message);
+    res.status(502).json({ error: "Impossible de recuperer les matchs en direct", detail: err.message });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`ScoreCI API proxy en ecoute sur le port ${PORT}`);
