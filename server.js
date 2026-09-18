@@ -10,6 +10,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
+const admin = require("firebase-admin");
 
 const API_KEY = process.env.API_FOOTBALL_KEY;
 const PORT = process.env.PORT || 3001;
@@ -21,10 +22,34 @@ if (!API_KEY) {
   process.exit(1);
 }
 
+// ---- Firebase Admin (notifications push) ----
+// Optionnel : sans cle de service, l'API-FOOTBALL continue de fonctionner
+// normalement, seules les routes /api/subscribe et l'envoi de notifs sont
+// desactivees.
+let messaging = null;
+if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
+  try {
+    const json = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_B64, "base64").toString("utf8");
+    const serviceAccount = JSON.parse(json);
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    messaging = admin.messaging();
+    console.log("Firebase Admin initialise : notifications push activees.");
+  } catch (err) {
+    console.error("Impossible d'initialiser Firebase Admin :", err.message);
+  }
+} else {
+  console.log("FIREBASE_SERVICE_ACCOUNT_B64 absente : notifications push desactivees.");
+}
+
+// Jetons des appareils abonnes (en memoire ; repart a zero si le serveur
+// redemarre - suffisant pour demarrer, a migrer vers une vraie base plus tard).
+const subscribedTokens = new Set();
+
 const app = express();
 app.use(cors({
   origin: ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS : true
 }));
+app.use(express.json());
 
 // ---- Competitions exposees a ScoreCI ----
 // Chaque entree decrit comment RETROUVER l'id numerique API-FOOTBALL de la
@@ -213,6 +238,62 @@ app.get("/api/live", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`ScoreCI API proxy en ecoute sur le port ${PORT}`);
+// POST /api/subscribe { token } -> enregistre un appareil pour les notifications
+app.post("/api/subscribe", (req, res) => {
+  const { token } = req.body || {};
+  if (!token) return res.status(400).json({ error: "token manquant" });
+  subscribedTokens.add(token);
+  res.json({ ok: true, total: subscribedTokens.size });
 });
+
+// POST /api/notify { title, body } -> envoie une notif a tous les appareils abonnes
+// (route manuelle, utile pour tester ; la detection automatique de buts
+// utilise la meme fonction en interne, voir plus bas)
+async function sendNotification(title, body) {
+  if (!messaging || !subscribedTokens.size) return { sent: 0 };
+  const tokens = Array.from(subscribedTokens);
+  const res = await messaging.sendEachForMulticast({
+    tokens,
+    notification: { title, body },
+    webpush: { fcmOptions: { link: "/" } }
+  });
+  // Nettoie les jetons invalides/expires
+  res.responses.forEach((r, i) => {
+    if (!r.success) subscribedTokens.delete(tokens[i]);
+  });
+  return { sent: res.successCount };
+}
+app.post("/api/notify", async (req, res) => {
+  if (!messaging) return res.status(503).json({ error: "Notifications non configurees" });
+  const { title, body } = req.body || {};
+  if (!title || !body) return res.status(400).json({ error: "title et body requis" });
+  try {
+    const result = await sendNotification(title, body);
+    res.json(result);
+  } catch (err) {
+    console.error(err.message);
+    res.status(502).json({ error: "Envoi echoue", detail: err.message });
+  }
+});
+
+// ---- Detection automatique de buts sur les matchs en direct ----
+// Toutes les 60s, compare les scores en direct au dernier releve connu et
+// notifie les abonnes si un score a change.
+const lastScores = new Map(); // fixtureId -> "hom
+{
+  "name": "scoreci-api-proxy",
+  "version": "1.0.0",
+  "description": "Proxy securise pour API-FOOTBALL (garde la cle API cote serveur) - alimente les sections Afrique & Monde de ScoreCI",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "node-fetch": "^2.7.0",
+    "firebase-admin": "^12.6.0"
+  }
+}
