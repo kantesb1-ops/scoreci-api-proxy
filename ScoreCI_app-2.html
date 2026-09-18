@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="theme-color" content="#009A44">
+<title>ScoreCI</title>
+<style>
+:root{--v:#009A44;--vd:#007A34;--o:#F77F00;--w:#fff;--g:#F4F5F7;--g2:#E8EAED;--t:#111827;--m:#6B7280;--m2:#9CA3AF;--card:#fff;--page:#F4F5F7;--bdr:#E8EAED;--inp:#F4F5F7;}
+[data-dark="1"]{--card:#1F2937;--page:#111827;--t:#F9FAFB;--m:#9CA3AF;--w:#1F2937;--g:#111827;--g2:#374151;--bdr:#374151;--inp:#374151;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#007A34;overflow:hidden;}
+#app{width:100%;max-width:430px;height:100vh;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;background:var(--page);}
+.sb{height:42px;padding:0 1.2rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;font-size:.82rem;font-weight:700;}
+.pg{display:none;flex-direction:column;height:100%;overflow:hidden;} .pg.on{display:flex;}
+#pw{background:linear-gradient(160deg,#005228,#007A34 50%,#009A44);}
+.wscr{flex:1;overflow-y:auto;padding:0 1.8rem 2rem;} .wscr::-webkit-scrollbar{display:none;}
+.wlogo{display:flex;align-items:center;gap:.9rem;margin-top:1.5rem;margin-bottom:2rem;}
+.wlogo img{width:66px;height:66px;border-radius:50%;box-shadow:0 6px 24px rgba(0,0,0,.3);}
+.wname{font-size:2rem;font-weight:900;color:#fff;letter-spacing:-1px;} .wname span{color:#F77F00;}
+.wsub{font-size:.65rem;color:rgba(255,255,255,.6);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+.wtitle{font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:.7rem;}
+.wtext{font-size:.95rem;color:rgba(255,255,255,.72);line-height:1.6;margin-bottom:2.5rem;}
+.btn{display:block;width:100%;padding:.95rem;border-radius:14px;border:none;font-family:inherit;font-size:.97rem;font-weight:700;cursor:pointer;text-align:center;margin-bottom:.8rem;transition:transform .15s;} .btn:active{transform:scale(.97);}
+.bto{background:#F77F00;color:#fff;} .btg{background:rgba(255,255,255,.14);color:#fff;border:1.5px solid rgba(255,255,255,.28);} .btx{background:transparent;color:rgba(255,255,255,.5);font-size:.85rem;padding:.6rem;}
+.sep{display:flex;align-items:center;gap:.7rem;color:rgba(255,255,255,.3);font-size:.72rem;font-weight:600;margin:.1rem 0 .7rem;} .sep::before,.sep::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.15);}
+.legal{text-align:center;font-size:.63rem;color:rgba(255,255,255,.35);line-height:1.6;margin-top:1rem;} .legal b{color:rgba(255,255,255,.6);}
+.langs{display:flex;gap:.5rem;justify-content:center;margin-top:1rem;}
+.lbtn{padding:.38rem .95rem;border-radius:8px;border:none;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);color:rgba(255,255,255,.45);} .lbtn.on{background:#F77F00;color:#fff;}
+#pl,#pr{background:linear-gradient(160deg,#005228,#007A34 60%,#009A44);}
+.lscr{flex:1;overflow-y:auto;padding:0 1.7rem 2rem;} .lscr::-webkit-scrollbar{display:none;}
+.bk{display:flex;align-items:center;gap:.3rem;background:none;border:none;color:rgba(255,255,255,.55);font-family:inherit;font-size:.83rem;font-weight:600;cursor:pointer;padding:.75rem 0;}
+.llogo{width:50px;height:50px;border-radius:50%;margin-bottom:1.2rem;}
+.ltitle{font-size:1.9rem;font-weight:900;color:#fff;margin-bottom:.35rem;}
+.lsub{font-size:.85rem;color:rgba(255,255,255,.6);margin-bottom:1.7rem;line-height:1.5;}
+.flbl{display:block;font-size:.67rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:.4rem;}
+.finp{width:100%;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.14);border-radius:12px;padding:.85rem .9rem;font-family:inherit;font-size:.93rem;color:#fff;-webkit-appearance:none;margin-bottom:.9rem;} .finp::placeholder{color:rgba(255,255,255,.28);} .finp:focus{outline:none;border-color:#F77F00;}
+.sbtn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;padding:.8rem;border-radius:12px;border:1.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:#fff;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;margin-bottom:.5rem;}
+.swl{text-align:center;margin-top:.8rem;font-size:.73rem;color:rgba(255,255,255,.4);} .swl button{background:none;border:none;color:#F77F00;font-size:.73rem;font-weight:700;cursor:pointer;}
+#pa{background:var(--page);}
+.topbar{background:var(--v);border-bottom:3px solid var(--o);padding:.78rem 1.2rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.tblogo{display:flex;align-items:center;gap:.55rem;} .tblogo img{width:30px;height:30px;border-radius:50%;}
+.tbname{font-size:1rem;font-weight:900;color:#fff;} .tbname span{color:#F77F00;}
+.tbsub{font-size:.5rem;color:rgba(255,255,255,.55);letter-spacing:1.5px;text-transform:uppercase;}
+.tbr{display:flex;gap:.4rem;align-items:center;}
+.tbtn{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:.85rem;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.dktgl{width:42px;height:22px;border-radius:12px;background:rgba(255,255,255,.2);border:none;cursor:pointer;position:relative;transition:background .2s;} .dktgl.on{background:#F77F00;} .dktgl::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;} .dktgl.on::after{transform:translateX(20px);}
+.sbar{padding:.6rem 1.2rem;background:var(--card);border-bottom:1px solid var(--bdr);position:relative;}
+.sbox{display:flex;align-items:center;gap:.45rem;background:var(--inp);border-radius:10px;padding:.48rem .78rem;border:1.5px solid var(--bdr);} .sbox:focus-within{border-color:var(--v);}
+.sbox input{flex:1;background:none;border:none;font-family:inherit;font-size:.85rem;color:var(--t);} .sbox input:focus{outline:none;}
+.sres{position:absolute;top:100%;left:1.2rem;right:1.2rem;background:var(--card);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:100;border:1px solid var(--bdr);max-height:200px;overflow-y:auto;display:none;} .sres.on{display:block;}
+.sri{display:flex;align-items:center;gap:.55rem;padding:.62rem .95rem;border-bottom:1px solid var(--bdr);cursor:pointer;} .sri:last-child{border-bottom:none;} .sri:active{background:var(--g);}
+.inner{flex:1;overflow:hidden;position:relative;}
+.itab{display:none;flex-direction:column;position:absolute;inset:0;} .itab.on{display:flex;}
+.scr{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;} .scr::-webkit-scrollbar{display:none;}
+.bnav{height:64px;background:var(--card);border-top:1px solid var(--bdr);display:grid;grid-template-columns:repeat(7,1fr);flex-shrink:0;box-shadow:0 -2px 8px rgba(0,0,0,.07);}
+.bn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;background:none;border:none;color:var(--m2);font-size:.5rem;font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:.28rem .1rem;} .bn .ic{font-size:1.2rem;line-height:1;} .bn.on{color:var(--v);}
+.tb2{background:var(--v);border-bottom:3px solid var(--o);padding:.72rem 1.2rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;} .tb2t{font-size:.97rem;font-weight:800;color:#fff;}
+.tabs{display:flex;background:var(--card);border-bottom:1px solid var(--bdr);overflow-x:auto;flex-shrink:0;} .tabs::-webkit-scrollbar{display:none;}
+.tab{flex-shrink:0;padding:.62rem .88rem;font-size:.68rem;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--m);background:none;border:none;cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;} .tab.on{color:var(--v);border-bottom-color:var(--v);}
+.stab{display:none;} .stab.on{display:block;}
+.chips{display:flex;gap:.4rem;padding:.58rem 1.2rem .4rem;overflow-x:auto;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--bdr);} .chips::-webkit-scrollbar{display:none;}
+.chip{flex-shrink:0;padding:.26rem .72rem;border-radius:20px;font-size:.65rem;font-weight:700;cursor:pointer;border:1.5px solid var(--bdr);color:var(--m);background:none;white-space:nowrap;} .chip.on{background:#F77F00;color:#fff;border-color:#F77F00;}
+.slbl{display:flex;align-items:center;justify-content:space-between;padding:.88rem 1.2rem .48rem;}
+.sttl{font-size:.98rem;font-weight:800;color:var(--t);} .sttl em{color:var(--v);font-style:normal;}
+.sall{font-size:.65rem;font-weight:700;color:#F77F00;background:none;border:none;cursor:pointer;text-transform:uppercase;}
+.livecard{margin:.88rem 1.2rem;background:linear-gradient(135deg,#005A28,#009A44);border-radius:16px;padding:.95rem 1.1rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;box-shadow:0 6px 20px rgba(0,154,68,.3);} .livecard:active{transform:scale(.98);}
+.livebadge{display:inline-flex;align-items:center;gap:.28rem;background:rgba(255,255,255,.18);color:#fff;font-size:.56rem;font-weight:800;letter-spacing:1.5px;padding:3px 8px;border-radius:5px;text-transform:uppercase;margin-bottom:.36rem;width:fit-content;}
+.lpulse{width:5px;height:5px;border-radius:50%;background:#fff;animation:pp 1s infinite;}
+@keyframes pp{0%,100%{opacity:1}50%{opacity:.2}}
+.liveteams{font-size:.84rem;font-weight:700;color:#fff;margin-bottom:.1rem;}
+.livecomp{font-size:.58rem;color:rgba(255,255,255,.6);}
+.livescore{font-size:2rem;font-weight:900;color:#fff;text-align:center;line-height:1;}
+.livemin{font-size:.56rem;color:rgba(255,255,255,.65);text-align:center;margin-top:2px;font-weight:700;}
+.acard{background:var(--card);border-radius:16px;overflow:hidden;cursor:pointer;margin:0 1.2rem .78rem;box-shadow:0 2px 10px rgba(0,0,0,.07);} .acard:active{transform:scale(.99);}
+.aimg{width:100%;height:148px;display:flex;align-items:center;justify-content:center;font-size:3.2rem;position:relative;}
+.abadge{position:absolute;top:.6rem;left:.6rem;background:#F77F00;color:#fff;font-size:.52rem;font-weight:800;letter-spacing:1.5px;padding:3px 8px;border-radius:5px;text-transform:uppercase;}
+.abody{padding:.75rem .92rem;} .asrc{font-size:.57rem;font-weight:700;color:var(--v);text-transform:uppercase;letter-spacing:1px;margin-bottom:.22rem;} .atitle{font-size:.9rem;font-weight:800;color:var(--t);line-height:1.3;margin-bottom:.22rem;} .ameta{font-size:.58rem;color:var(--m);}
+.amini{display:flex;gap:.68rem;padding:.72rem 1.2rem;border-bottom:1px solid var(--bdr);background:var(--card);cursor:pointer;} .amini:active{background:var(--g);}
+.aminiico{width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;}
+.aminib{flex:1;min-width:0;} .aminisrc{font-size:.55rem;font-weight:700;color:#F77F00;text-transform:uppercase;letter-spacing:1px;margin-bottom:.15rem;} .aminit{font-size:.78rem;font-weight:700;color:var(--t);line-height:1.3;margin-bottom:.15rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;} .aminid{font-size:.55rem;color:var(--m);}
+.mwrap{margin:0 1.2rem .82rem;background:var(--card);border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.mhdr{background:linear-gradient(90deg,var(--v),#00C455);padding:.5rem .95rem;font-size:.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#fff;}
+.mrow{display:flex;align-items:center;padding:.75rem .95rem;border-bottom:1px solid var(--bdr);cursor:pointer;} .mrow:last-child{border-bottom:none;} .mrow:active{background:var(--g);}
+.mrteams{flex:1;display:flex;align-items:center;gap:.3rem;} .mrteam{display:flex;align-items:center;gap:.28rem;flex:1;} .mrteam.r{flex-direction:row-reverse;}
+.clog{width:22px;height:22px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;font-size:.7rem;flex-shrink:0;border:1px solid var(--bdr);}
+.mrname{font-size:.72rem;font-weight:700;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:76px;}
+.mrvs{font-size:.63rem;font-weight:800;color:var(--m2);flex-shrink:0;padding:0 .14rem;}
+.mrinfo{text-align:right;min-width:58px;} .mrdate{font-size:.6rem;font-weight:700;color:#F77F00;} .mrcomp{font-size:.52rem;color:var(--m);margin-top:1px;}
+.rhdr{padding:.4rem 1.2rem;font-size:.56rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--m);background:var(--g);border-bottom:1px solid var(--bdr);}
+.rrow{display:flex;align-items:center;padding:.85rem 1.2rem;border-bottom:1px solid var(--bdr);cursor:pointer;background:var(--card);} .rrow:active{background:var(--g);}
+.rrt{flex:1;display:flex;flex-direction:column;gap:.38rem;} .rrl{display:flex;align-items:center;gap:.52rem;}
+.rrlog{width:19px;height:19px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;font-size:.6rem;flex-shrink:0;}
+.rrname{font-size:.8rem;font-weight:600;color:var(--m);flex:1;} .rrname.w{font-weight:800;color:var(--t);}
+.rrsc{display:flex;flex-direction:column;align-items:center;gap:.38rem;margin-left:.52rem;}
+.rrs{font-size:1.1rem;font-weight:900;color:var(--m);width:22px;text-align:center;line-height:1;} .rrs.w{color:var(--t);}
+.rrmeta{text-align:right;margin-left:.62rem;flex-shrink:0;} .rrst{font-size:.58rem;font-weight:700;color:var(--m);} .rrst.lv{color:var(--v);} .rrcomp{font-size:.5rem;color:var(--m);margin-top:2px;}
+.clashdr{background:linear-gradient(135deg,var(--vd),var(--v));padding:.95rem 1.2rem;flex-shrink:0;}
+.clastitle{font-size:1.4rem;font-weight:900;color:#fff;text-transform:uppercase;} .classub{font-size:.66rem;color:rgba(255,255,255,.6);margin-top:.18rem;}
+.thdr{display:grid;grid-template-columns:25px 1fr 22px 22px 22px 22px 32px;gap:.07rem;padding:.44rem 1.2rem;font-size:.53rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--m);background:var(--g);border-bottom:1px solid var(--bdr);flex-shrink:0;position:sticky;top:0;z-index:5;}
+.crow{display:grid;grid-template-columns:25px 1fr 22px 22px 22px 22px 32px;gap:.07rem;padding:.56rem 1.2rem;align-items:center;border-bottom:1px solid var(--bdr);cursor:pointer;background:var(--card);border-left:3px solid transparent;} .crow:active{background:var(--g);}
+.crow.pr{border-left-color:var(--v);} .crow.rl{border-left-color:#ef4444;}
+.cpos{font-size:.8rem;font-weight:800;color:var(--m);text-align:center;} .crow.pr .cpos{color:var(--v);} .crow.rl .cpos{color:#ef4444;}
+.ccid{display:flex;align-items:center;gap:.36rem;overflow:hidden;} .ccl{width:17px;height:17px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;font-size:.5rem;flex-shrink:0;border:1px solid var(--bdr);} .ccn{font-size:.7rem;font-weight:700;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cst{font-size:.68rem;font-weight:600;color:var(--m);text-align:center;} .cpts{font-size:.85rem;font-weight:900;color:var(--v);text-align:center;} .crow.rl .cpts{color:#ef4444;}
+.leg{display:flex;flex-wrap:wrap;gap:.5rem;padding:.6rem 1.2rem;background:var(--g);} .legi{display:flex;align-items:center;gap:.26rem;font-size:.56rem;color:var(--m);} .ldot{width:8px;height:3px;border-radius:2px;}
+.selhdr{background:linear-gradient(135deg,var(--vd),var(--v));padding:1rem 1.2rem .82rem;flex-shrink:0;}
+.selfr{display:flex;align-items:center;gap:.58rem;margin-bottom:.48rem;} .selflag{width:26px;height:18px;object-fit:cover;border-radius:2px;}
+.selname{font-size:1.45rem;font-weight:900;color:#fff;text-transform:uppercase;} .selcoach{font-size:.64rem;color:rgba(255,255,255,.52);margin-top:.12rem;}
+.selst{display:flex;gap:1.2rem;margin-top:.68rem;} .ss{text-align:center;} .ss .sn{font-size:1.25rem;font-weight:900;color:#F77F00;line-height:1;} .ss .sl{font-size:.52rem;font-weight:700;color:rgba(255,255,255,.42);text-transform:uppercase;letter-spacing:1px;margin-top:1px;}
+.phdr{padding:.4rem 1.2rem .2rem;font-size:.54rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--m);background:var(--g);}
+.prow{display:flex;align-items:center;gap:.68rem;padding:.7rem 1.2rem;border-bottom:1px solid var(--bdr);cursor:pointer;background:var(--card);} .prow:active{background:var(--g);}
+.pav{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--vd),var(--v));display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;border:2px solid var(--bdr);position:relative;}
+.pnum{position:absolute;bottom:-2px;right:-2px;background:var(--v);color:#fff;font-size:.38rem;font-weight:800;width:12px;height:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.pi{flex:1;min-width:0;} .pname{font-size:.82rem;font-weight:700;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .pclub{font-size:.6rem;color:var(--m);margin-top:1px;}
+.ppos{font-size:.54rem;font-weight:800;letter-spacing:.8px;padding:3px 7px;border-radius:5px;text-transform:uppercase;flex-shrink:0;}
+.gk{background:rgba(247,127,0,.12);color:#F77F00;} .df{background:rgba(0,154,68,.1);color:var(--v);} .mf{background:rgba(59,130,246,.1);color:#2563eb;} .at{background:rgba(239,68,68,.1);color:#dc2626;}
+.pstat{font-size:.68rem;font-weight:800;color:var(--v);flex-shrink:0;}
+.cgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:.7rem;padding:.88rem 1.2rem;}
+.cc{background:var(--card);border-radius:14px;overflow:hidden;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid var(--bdr);} .cc:active{transform:scale(.97);}
+.ccbanner{height:56px;display:flex;align-items:center;justify-content:center;font-size:1.9rem;position:relative;}
+.ccbadge{position:absolute;bottom:-13px;left:50%;transform:translateX(-50%);width:27px;height:27px;border-radius:50%;background:var(--card);border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:.8rem;box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.ccbody{padding:1.05rem .62rem .7rem;text-align:center;} .ccname{font-size:.74rem;font-weight:800;color:var(--t);line-height:1.2;margin-bottom:.14rem;} .ccdiv{font-size:.52rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--m);} .ccpts{font-size:.86rem;font-weight:900;color:var(--v);margin-top:.2rem;}
+.cdet{display:none;position:absolute;inset:0;background:var(--page);z-index:50;flex-direction:column;overflow:hidden;} .cdet.on{display:flex;}
+.cdhdr{padding:1.4rem 1.2rem .95rem;flex-shrink:0;}
+.cdbk{display:flex;align-items:center;gap:.4rem;background:rgba(255,255,255,.15);border:none;color:#fff;font-family:inherit;font-size:.78rem;font-weight:600;cursor:pointer;padding:.38rem .78rem;border-radius:8px;margin-bottom:.95rem;}
+.cdtop{display:flex;align-items:center;gap:.95rem;} .cdem{font-size:2.8rem;} .cdname{font-size:1.55rem;font-weight:900;color:#fff;line-height:1.1;}
+.cdbadge{display:inline-block;background:#F77F00;color:#fff;font-size:.58rem;font-weight:800;letter-spacing:1px;padding:3px 8px;border-radius:5px;text-transform:uppercase;margin-top:.28rem;}
+.cdsgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:.48rem;margin-top:.95rem;}
+.cdstat{background:rgba(255,255,255,.12);border-radius:10px;padding:.48rem;text-align:center;} .cdstat .n{font-size:1.15rem;font-weight:900;color:#fff;line-height:1;} .cdstat .l{font-size:.5rem;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.8px;margin-top:2px;}
+.cdbody{flex:1;overflow-y:auto;} .cdsec{padding:.75rem 1.2rem .38rem;font-size:.63rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--m);background:var(--g);border-bottom:1px solid var(--bdr);}
+.cdinf{display:flex;justify-content:space-between;align-items:center;padding:.62rem 1.2rem;border-bottom:1px solid var(--bdr);background:var(--card);} .cdil{font-size:.7rem;color:var(--m);} .cdiv{font-size:.76rem;font-weight:700;color:var(--t);}
+.pdet{display:none;position:absolute;inset:0;background:var(--page);z-index:60;flex-direction:column;overflow:hidden;} .pdet.on{display:flex;}
+.pdhdr{padding:1.2rem 1.2rem .78rem;flex-shrink:0;}
+.pdbk{display:flex;align-items:center;gap:.4rem;background:rgba(255,255,255,.15);border:none;color:#fff;font-family:inherit;font-size:.76rem;font-weight:600;cursor:pointer;padding:.38rem .78rem;border-radius:8px;margin-bottom:.95rem;}
+.pdtop{display:flex;align-items:center;gap:.88rem;} .pdav{width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:1.9rem;border:3px solid rgba(255,255,255,.28);flex-shrink:0;} .pdname{font-size:1.35rem;font-weight:900;color:#fff;line-height:1.1;}
+.pdbody{flex:1;overflow-y:auto;background:var(--page);}
+.pdsg{display:grid;grid-template-columns:repeat(3,1fr);gap:.58rem;padding:.95rem 1.2rem;}
+.pdst{background:var(--card);border-radius:12px;padding:.68rem;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);} .pdst .n{font-size:1.35rem;font-weight:900;color:var(--v);line-height:1;} .pdst .l{font-size:.54rem;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:.8px;margin-top:3px;}
+.pdinf{display:flex;justify-content:space-between;align-items:center;padding:.62rem 1.2rem;border-bottom:1px solid var(--bdr);background:var(--card);}
+.cbox{padding:.75rem 1.2rem;background:var(--card);border-top:1px solid var(--bdr);flex-shrink:0;display:flex;gap:.48rem;align-items:flex-end;}
+.cinp{flex:1;background:var(--inp);border:1.5px solid var(--bdr);border-radius:20px;padding:.48rem .88rem;font-family:inherit;font-size:.84rem;color:var(--t);resize:none;max-height:80px;} .cinp:focus{outline:none;border-color:var(--v);}
+.csend{width:35px;height:35px;border-radius:50%;background:var(--v);border:none;color:#fff;font-size:.95rem;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+.citem{padding:.68rem 1.2rem;border-bottom:1px solid var(--bdr);background:var(--card);}
+.cihead{display:flex;align-items:center;gap:.48rem;margin-bottom:.28rem;} .ciav{width:27px;height:27px;border-radius:50%;background:linear-gradient(135deg,var(--vd),var(--v));display:flex;align-items:center;justify-content:center;font-size:.78rem;color:#fff;font-weight:700;flex-shrink:0;} .ciname{font-size:.73rem;font-weight:700;color:var(--t);} .citime{font-size:.58rem;color:var(--m);margin-left:auto;} .citext{font-size:.78rem;color:var(--t);line-height:1.4;} .cilikes{display:flex;align-items:center;gap:.28rem;margin-top:.28rem;font-size:.63rem;color:var(--m);cursor:pointer;}
+.ftopic{padding:.72rem 1.2rem;border-bottom:1px solid var(--bdr);background:var(--card);cursor:pointer;} .ftopic:active{background:var(--g);}
+.ftt{font-size:.83rem;font-weight:700;color:var(--t);margin-bottom:.2rem;} .ftm{display:flex;gap:.58rem;font-size:.58rem;color:var(--m);} .fttag{background:rgba(0,154,68,.1);color:var(--v);font-size:.56rem;font-weight:700;padding:2px 6px;border-radius:4px;}
+.toast{position:fixed;bottom:75px;left:50%;transform:translateX(-50%);background:var(--t);color:#fff;padding:.55rem 1.15rem;border-radius:20px;font-size:.74rem;font-weight:700;z-index:9999;display:none;white-space:nowrap;max-width:88vw;box-shadow:0 4px 14px rgba(0,0,0,.2);pointer-events:none;} .toast.on{display:block;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<div class="pg on" id="pw">
+  <div class="sb" style="color:#fff;background:transparent;"><span id="clk">09:41</span><span>📶🔋</span></div>
+  <div class="wscr">
+    <div class="wlogo"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzAwOUE0NCIvPgogIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQzIiBmaWxsPSIjMDA3QTM0Ii8+CiAgPHRleHQgeD0iNTAiIHk9IjQyIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2ssc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZm9udC13ZWlnaHQ9IjkwMCIgZmlsbD0iI0Y3N0YwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgbGV0dGVyLXNwYWNpbmc9Ii0xIj5TY29yZTwvdGV4dD4KICA8dGV4dCB4PSI1MCIgeT0iNjIiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayxzYW5zLXNlcmlmIiBmb250LXNpemU9IjIwIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSIjRkZGRkZGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBsZXR0ZXItc3BhY2luZz0iMiI+Q0k8L3RleHQ+CiAgPHJlY3QgeD0iMjAiIHk9IjY3IiB3aWR0aD0iNjAiIGhlaWdodD0iMyIgcng9IjEuNSIgZmlsbD0iI0Y3N0YwMCIvPgogIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQ4IiBmaWxsPSJub25lIiBzdHJva2U9IiNGNzdGMDAiIHN0cm9rZS13aWR0aD0iMi41Ii8+Cjwvc3ZnPg==" alt="ScoreCI"><div><div class="wname">Score<span>CI</span></div><div class="wsub">Football Cote d Ivoire</div></div></div>
+    <div class="wtitle" id="wtitle">Bonjour !</div>
+    <div class="wtext" id="wtext">Veuillez vous inscrire ou vous connecter si vous avez deja un compte !</div>
+    <button class="btn bto" id="btn-login" onclick="P('pl')">Se connecter</button>
+    <div class="sep">OU</div>
+    <button class="btn btg" id="btn-register" onclick="P('pr')">S enregistrer</button>
+    <button class="btn btx" id="btn-guest" onclick="P('pa');I()">Continuer sans compte</button>
+    <div class="legal" id="wlegal">En continuant, vous acceptez nos <b>Conditions d utilisation</b> et notre <b>Politique de confidentialite</b></div>
+    <div class="langs">
+      <button class="lbtn" onclick="L(this,'en')">EN</button>
+      <button class="lbtn on" onclick="L(this,'fr')">FR</button>
+    </div>
+    <div style="height:1.5rem;"></div>
+  </div>
+</div>
+
+<div class="pg" id="pl">
+  <div class="sb" style="color:#fff;background:transparent;"><span>09:41</span><span>📶🔋</span></div>
+  <div class="lscr">
+    <button class="bk" onclick="P('pw')">← Retour</button>
+    <img class="llogo" src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzAwOUE0NCIvPgogIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQzIiBmaWxsPSIjMDA3QTM0Ii8+CiAgPHRleHQgeD0iNTAiIHk9IjQyIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2ssc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZm9udC13ZWlnaHQ9IjkwMCIgZmlsbD0iI0Y3N0YwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgbGV0dGVyLXNwYWNpbmc9Ii0xIj5TY29yZTwvdGV4dD4KICA8dGV4dCB4PSI1MCIgeT0iNjIiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayxzYW5zLXNlcmlmIiBmb250LXNpemU9IjIwIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSIjRkZGRkZGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBsZXR0ZXItc3BhY2luZz0iMiI+Q0k8L3RleHQ+CiAgPHJlY3QgeD0iMjAiIHk9IjY3IiB3aWR0aD0iNjAiIGhlaWdodD0iMyIgcng9IjEuNSIgZmlsbD0iI0Y3N0YwMCIvPgogIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQ4IiBmaWxsPSJub25lIiBzdHJva2U9IiNGNzdGMDAiIHN0cm9rZS13aWR0aD0iMi41Ii8+Cjwvc3ZnPg==" alt="ScoreCI">
+    <div class="ltitle" id="ltitle">Se connecter</div>
+    <div class="lsub" id="lsub">Acces a toutes les fonctionnalites de ScoreCI.</div>
+    <label class="flbl">Email</label><input class="finp" type="email" placeholder="exemple@email.com">
+    <label class="flbl">Mot de passe</label><input class="finp" type="password" placeholder="••••••••">
+    <button class="btn bto" onclick="P('pa');I()">Se connecter</button>
+    <div class="sep" style="color:rgba(255,255,255,.3);">OU</div>
+    <button class="sbtn" onclick="T('Google...')">🌐 Google</button>
+    <button class="sbtn" onclick="T('Facebook...')">📘 Facebook</button>
+    <div class="swl">Pas de compte ? <button onclick="P('pr')">S enregistrer</button></div>
+  </div>
+</div>
+
+<div class="pg" id="pr">
+  <div class="sb" style="color:#fff;background:transparent;"><span>09:41</span><span>📶🔋</span></div>
+  <div class="lscr">
+    <button class="bk" onclick="P('pw')">← Retour</button>
+    <img class="llogo" src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzAwOUE0NCIvPgogIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQzIiBmaWxsPSIjMDA3QTM0Ii8+CiAgPHRleHQgeD0iNTAiIHk9IjQyIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2ssc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZm9udC13ZWlnaHQ9IjkwMCIgZmlsbD0iI0Y3N0YwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgbGV0dGVyLXNwYWNpbmc9Ii0xIj5TY29yZTwvdGV4dD4KICA8dGV4dCB4PSI1MCIgeT0iNjIiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayxzYW5zLXNlcmlmIiBmb250LXNpemU9IjIwIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSIjRkZGRkZGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBsZXR0ZXItc3BhY2luZz0iMiI+Q0k8L3RleHQ+CiAgPHJlY3QgeD0iMjAiIHk9IjY3IiB3aWR0aD0iNjAiIGhlaWdodD0iMyIgcng9IjEuNSIgZmlsbD0iI0Y3N0YwMCIvPgogIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQ4IiBmaWxsPSJub25lIiBzdHJva2U9IiNGNzdGMDAiIHN0cm9rZS13aWR0aD0iMi41Ii8+Cjwvc3ZnPg==" alt="ScoreCI">
+    <div class="ltitle" id="rtitle">Creer un compte</div>
+    <div class="lsub" id="rsub">Rejoignez la communaute ScoreCI.</div>
+    <label class="flbl">Prenom et Nom</label><input class="finp" type="text" placeholder="Didier Drogba">
+    <label class="flbl">Email</label><input class="finp" type="email" placeholder="exemple@email.com">
+    <label class="flbl">Mot de passe</label><input class="finp" type="password" placeholder="8 caracteres minimum">
+    <button class="btn bto" onclick="P('pa');I()">Creer mon compte</button>
+    <div class="swl">Deja un compte ? <button onclick="P('pl')">Se connecter</button></div>
+  </div>
+</div>
+
+<div class="pg" id="pa">
+  <div class="sb" style="background:var(--v);color:#fff;flex-shrink:0;"><span id="clk2">09:41</span><span>📶🔋</span></div>
+  <div class="topbar" id="tbmain">
+    <div class="tblogo"><img src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzAwOUE0NCIvPgogIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQzIiBmaWxsPSIjMDA3QTM0Ii8+CiAgPHRleHQgeD0iNTAiIHk9IjQyIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2ssc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZm9udC13ZWlnaHQ9IjkwMCIgZmlsbD0iI0Y3N0YwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgbGV0dGVyLXNwYWNpbmc9Ii0xIj5TY29yZTwvdGV4dD4KICA8dGV4dCB4PSI1MCIgeT0iNjIiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayxzYW5zLXNlcmlmIiBmb250LXNpemU9IjIwIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSIjRkZGRkZGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBsZXR0ZXItc3BhY2luZz0iMiI+Q0k8L3RleHQ+CiAgPHJlY3QgeD0iMjAiIHk9IjY3IiB3aWR0aD0iNjAiIGhlaWdodD0iMyIgcng9IjEuNSIgZmlsbD0iI0Y3N0YwMCIvPgogIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQ4IiBmaWxsPSJub25lIiBzdHJva2U9IiNGNzdGMDAiIHN0cm9rZS13aWR0aD0iMi41Ii8+Cjwvc3ZnPg==" alt="ScoreCI"><div><div class="tbname">Score<span>CI</span></div><div class="tbsub">Football Cote d Ivoire</div></div></div>
+    <div class="tbr">
+      <button class="dktgl" id="dkt" onclick="DK()"></button>
+      <button class="tbtn" onclick="T('Notifications')">🔔</button>
+      <button class="tbtn" onclick="T('Profil')">👤</button>
+    </div>
+  </div>
+  <div class="sbar" id="sbar">
+    <div class="sbox">
+      <span style="color:var(--m2);">🔍</span>
+      <input type="text" id="sinp" placeholder="Rechercher un club, joueur..." oninput="DS(this.value)" onfocus="SRS()" onblur="setTimeout(HRS,200)">
+      <button id="sclr" onclick="CS()" style="background:none;border:none;color:var(--m2);cursor:pointer;display:none;">x</button>
+    </div>
+    <div class="sres" id="sres"></div>
+  </div>
+  <div class="inner">
+
+    <div class="itab on" id="ih">
+      <div class="scr">
+        <div class="livecard" onclick="GT('im',1)">
+          <div><div class="livebadge"><div class="lpulse"></div><span id="live-label">En direct</span></div><div class="liveteams">ASEC Mimosas vs Africa Sports</div><div class="livecomp">MTN Ligue 1 - Journee 28</div></div>
+          <div><div class="livescore">2-1</div><div class="livemin" id="lm">67'</div></div>
+        </div>
+        <div class="slbl"><div class="sttl"><span id="actu-label">Actualites</span></div><button class="sall" onclick="GT('in',4)">Tout</button></div>
+        <div id="zh"></div><div id="zm"></div>
+        <div class="slbl"><div class="sttl"><span id="next-label">Prochains Matchs</span></div><button class="sall" onclick="GT('im',1)">Voir</button></div>
+        <div class="mwrap">
+          <div class="mhdr">Cette semaine</div>
+          <div class="mrow" onclick="GT('im',1)"><div class="mrteams"><div class="mrteam"><div class="clog">🟠</div><span class="mrname">ASEC Mimosas</span></div><div class="mrvs">VS</div><div class="mrteam r"><span class="mrname">Stade Abidjan</span><div class="clog">🔵</div></div></div><div class="mrinfo"><div class="mrdate">Sam 28 Juin</div><div class="mrcomp">Ligue 1 J29</div></div></div>
+          <div class="mrow" onclick="GT('im',1)"><div class="mrteams"><div class="mrteam"><div class="clog">🟢</div><span class="mrname">Africa Sports</span></div><div class="mrvs">VS</div><div class="mrteam r"><span class="mrname">SOA</span><div class="clog">🔴</div></div></div><div class="mrinfo"><div class="mrdate">Dim 29 Juin</div><div class="mrcomp">Ligue 1 J29</div></div></div>
+          <div class="mrow" onclick="GT('im',1)"><div class="mrteams"><div class="mrteam"><div class="clog">🐘</div><span class="mrname">Elephants CI</span></div><div class="mrvs">VS</div><div class="mrteam r"><span class="mrname">Senegal</span><div class="clog">🦁</div></div></div><div class="mrinfo"><div class="mrdate">Mer 2 Juil</div><div class="mrcomp">Eliminatoires</div></div></div>
+        </div>
+        <div style="height:1rem;"></div>
+      </div>
+    </div>
+
+    <div class="itab" id="im">
+      <div class="tb2"><div class="tb2t">Matchs et Resultats</div></div>
+      <div class="tabs"><button class="tab on" onclick="ST(this,'sr')">Resultats</button><button class="tab" onclick="ST(this,'sc')">Calendrier</button><button class="tab" onclick="ST(this,'sl2')">Direct</button></div>
+      <div class="scr">
+        <div class="stab on" id="sr">
+          <div class="chips"><button class="chip on" onclick="AZ(this,'all')">Tout</button><button class="chip" onclick="AZ(this,'ci')">🇨🇮 CI</button><button class="chip" onclick="AZ(this,'afrique')">🌍 Afrique</button><button class="chip" onclick="AZ(this,'monde')">🌐 Monde</button></div>
+          <div class="zone-block" data-zone="ci">
+          <div class="rhdr">Journee 28 - Ligue 1 - 27 Juin 2026</div>
+          <div class="rrow" onclick="T('ASEC 2-1')"><div class="rrt"><div class="rrl"><div class="rrlog">🟠</div><span class="rrname w">ASEC Mimosas</span></div><div class="rrl"><div class="rrlog">🟢</div><span class="rrname">Africa Sports</span></div></div><div class="rrsc"><span class="rrs w">2</span><span class="rrs">1</span></div><div class="rrmeta"><div class="rrst lv">En direct 67'</div><div class="rrcomp">Ligue 1</div></div></div>
+          <div class="rrow" onclick="T('SOA 3-0')"><div class="rrt"><div class="rrl"><div class="rrlog">🔴</div><span class="rrname w">SOA</span></div><div class="rrl"><div class="rrlog">🔵</div><span class="rrname">Stade Abidjan</span></div></div><div class="rrsc"><span class="rrs w">3</span><span class="rrs">0</span></div><div class="rrmeta"><div class="rrst">Termine</div><div class="rrcomp">Ligue 1</div></div></div>
+          <div class="rrow" onclick="T('Gagnoa 2-1')"><div class="rrt"><div class="rrl"><div class="rrlog">🟡</div><span class="rrname">San Pedro FC</span></div><div class="rrl"><div class="rrlog">🟤</div><span class="rrname w">SC Gagnoa</span></div></div><div class="rrsc"><span class="rrs">1</span><span class="rrs w">2</span></div><div class="rrmeta"><div class="rrst">Termine</div><div class="rrcomp">Ligue 1</div></div></div>
+          </div>
+          <div class="zone-block" data-zone="afrique">
+          <div class="rhdr">CAN 2025 - Phase de groupes</div>
+          <div class="rrow" onclick="T('CI 3-0 Guinee')"><div class="rrt"><div class="rrl"><div class="rrlog">🐘</div><span class="rrname w">Cote d Ivoire</span></div><div class="rrl"><div class="rrlog">🦅</div><span class="rrname">Guinee</span></div></div><div class="rrsc"><span class="rrs w">3</span><span class="rrs">0</span></div><div class="rrmeta"><div class="rrst">Termine</div><div class="rrcomp">CAN 2025</div></div></div>
+          <div class="rrow" onclick="T('Egypte 1-1 Mozambique')"><div class="rrt"><div class="rrl"><div class="rrlog">🐫</div><span class="rrname">Egypte</span></div><div class="rrl"><div class="rrlog">🦁</div><span class="rrname">Mozambique</span></div></div><div class="rrsc"><span class="rrs">1</span><span class="rrs">1</span></div><div class="rrmeta"><div class="rrst">Termine</div><div class="rrcomp">CAN 2025</div></div></div>
+          <div class="rhdr">Ligue des Champions CAF - Poule A</div>
+          <div class="rrow" onclick="T('ASEC 1-1 Al Ahly')"><div class="rrt"><div class="rrl"><div class="rrlog">🟠</div><span class="rrname">ASEC Mimosas</span></div><div class="rrl"><div class="rrlog">🔴</div><span class="rrname w">Al Ahly</span></div></div><div class="rrsc"><span class="rrs">1</span><span class="rrs">1</span></div><div class="rrmeta"><div class="rrst">Termine</div><div class="rrcomp">CAF CL</div></div></div>
+          <div class="rrow" onclick="T('Esperance 2-0 Sundowns')"><div class="rrt"><div class="rrl"><div class="rrlog">🟡</div><span class="rrname w">Esperance Tunis</span></div><div class="rrl"><div class="rrlog">🟢</div><span class="rrname">Mamelodi Sundowns</span></div></div><div class="rrsc"><span class="rrs w">2</span><span class="rrs">0</span></div><div class="rrmeta"><div class="rrst">Termine</div><div class="rrcomp">CAF CL</div></div></div>
+          </div>
+          <div class="zone-block" data-zone="monde">
+          <div class="rhdr">Eliminatoires CM 2026</div>
+          <div class="rrow" onclick="T('Victoire 2-0')"><div class="rrt"><div class="rrl"><div class="rrlog">🐘</div><span class="rrname w">Cote d Ivoire</span></div><div class="rrl"><div class="rrlog">🦅</div><span class="rrname">Cameroun</span></div></div><div class="rrsc"><span class="rrs w">2</span><span class="rrs">0</span></div><div class="rrmeta"><div class="rrst">Termine</div><div class="rrcomp">CM2026</div></div></div>
+          <div class="rhdr">Premier League</div>
+          <div class="rrow" onclick="T('Nottingham 1-1 Brighton')"><div class="rrt"><div class="rrl"><div class="rrlog">⚫</div><span class="rrname">Nottingham Forest</span></div><div class="rrl"><div class="rrlog">🔵</div><span class="rrname">Brighton</span></div></div><div class="rrsc"><span class="rrs">1</span><span class="rrs">1</span></div><div class="rrmeta"><div class="rrst">Termine</div><div class="rrcomp">Premier League</div></div></div>
+          <div class="rhdr">Bundesliga</div>
+          <div class="rrow" onclick="T('Dortmund 2-1 Leverkusen')"><div class="rrt"><div class="rrl"><div class="rrlog">🟡</div><span class="rrname w">Dortmund</span></div><div class="rrl"><div class="rrlog">⚫</div><span class="rrname">Bayer Leverkusen</span></div></div><div class="rrsc"><span class="rrs w">2</span><span class="rrs">1</span></div><div class="rrmeta"><div class="rrst">Termine</div><div class="rrcomp">Bundesliga</div></div></div>
+          <div class="rhdr">Ligue 1 (France)</div>
+          <div class="rrow" onclick="T('Lens 2-0 Nice')"><div class="rrt"><div class="rrl"><div class="rrlog">🔴</div><span class="rrname w">RC Lens</span></div><div class="rrl"><div class="rrlog">🔴</div><span class="rrname">OGC Nice</span></div></div><div class="rrsc"><span class="rrs w">2</span><span class="rrs">0</span></div><div class="rrmeta"><div class="rrst">Termine</div><div class="rrcomp">Ligue 1 FR</div></div></div>
+          </div>
+        </div>
+        <div class="stab" id="sc">
+          <div class="chips"><button class="chip on" onclick="AZ(this,'all')">Tout</button><button class="chip" onclick="AZ(this,'ci')">🇨🇮 CI</button><button class="chip" onclick="AZ(this,'afrique')">🌍 Afrique</button><button class="chip" onclick="AZ(this,'monde')">🌐 Monde</button></div>
+          <div class="zone-block" data-zone="ci">
+          <div class="rhdr">Journee 29 - 28-29 Juin 2026</div>
+          <div class="rrow" onclick="T('Rappel active')"><div class="rrt"><div class="rrl"><div class="rrlog">🟠</div><span class="rrname">ASEC Mimosas</span></div><div class="rrl"><div class="rrlog">🔵</div><span class="rrname">Stade Abidjan</span></div></div><div class="rrmeta"><div class="rrst" style="color:#F77F00;">Sam 15h00</div><div class="rrcomp">Ligue 1</div></div></div>
+          </div>
+          <div class="zone-block" data-zone="afrique">
+          <div class="rhdr">CAN 2025 - Quarts de finale</div>
+          <div class="rrow" onclick="T('Rappel active')"><div class="rrt"><div class="rrl"><div class="rrlog">🐘</div><span class="rrname">Cote d Ivoire</span></div><div class="rrl"><div class="rrlog">⭐</div><span class="rrname">A determiner</span></div></div><div class="rrmeta"><div class="rrst" style="color:var(--v);">Ven 4 Jul 20h</div><div class="rrcomp">CAN 2025</div></div></div>
+          <div class="rrow" onclick="T('Rappel active')"><div class="rrt"><div class="rrl"><div class="rrlog">🟠</div><span class="rrname">ASEC Mimosas</span></div><div class="rrl"><div class="rrlog">🔴</div><span class="rrname">Al Ahly</span></div></div><div class="rrmeta"><div class="rrst" style="color:var(--v);">Dim 6 Jul 18h</div><div class="rrcomp">CAF CL</div></div></div>
+          </div>
+          <div class="zone-block" data-zone="monde">
+          <div class="rrow" onclick="T('Rappel active')"><div class="rrt"><div class="rrl"><div class="rrlog">🐘</div><span class="rrname">Elephants CI</span></div><div class="rrl"><div class="rrlog">🦁</div><span class="rrname">Senegal</span></div></div><div class="rrmeta"><div class="rrst" style="color:var(--v);">Mer 2 Jul 20h</div><div class="rrcomp">Eliminatoires</div></div></div>
+          <div class="rrow" onclick="T('Rappel active')"><div class="rrt"><div class="rrl"><div class="rrlog">🔴</div><span class="rrname">RC Lens</span></div><div class="rrl"><div class="rrlog">🔵</div><span class="rrname">PSG</span></div></div><div class="rrmeta"><div class="rrst" style="color:var(--v);">Sam 5 Jul 21h</div><div class="rrcomp">Ligue 1 FR</div></div></div>
+          </div>
+        </div>
+        <div class="stab" id="sl2"><div style="padding:2rem 1.2rem;text-align:center;"><div style="font-size:2.5rem;margin-bottom:.7rem;">🔴</div><div style="font-size:1.2rem;font-weight:800;color:var(--v);margin-bottom:.4rem;">1 MATCH EN DIRECT</div><div style="font-size:.85rem;color:var(--m);">ASEC Mimosas - Africa Sports</div><div style="font-size:1.8rem;font-weight:900;color:#F77F00;margin:.4rem 0;" id="lm2">67'</div><button style="background:var(--v);color:#fff;border:none;padding:.62rem 1.4rem;border-radius:10px;font-family:inherit;font-size:.83rem;font-weight:800;cursor:pointer;" onclick="T('Suivi active')">Suivre en direct</button></div></div>
+        <div style="height:1rem;"></div>
+      </div>
+    </div>
+
+    <div class="itab" id="ic">
+      <div class="clashdr"><div class="clastitle" id="clastitle2">Classement</div><div class="classub" id="classub2">MTN Ligue 1 - 2025/2026 - J28</div></div>
+      <div class="chips"><button class="chip on" onclick="SWC(this,'ci')">🇨🇮 Cote d Ivoire</button><button class="chip" onclick="SWC(this,'can')">🏆 CAN 2025</button><button class="chip" onclick="SWC(this,'cafcl')">🌍 CAF CL</button><button class="chip" onclick="SWC(this,'qualifs')">🌐 Qualifs Mondial</button><button class="chip" onclick="SWC(this,'l1fr')">🇫🇷 Ligue 1 FR</button><button class="chip" onclick="SWC(this,'pl')">🏴 Premier League</button><button class="chip" onclick="SWC(this,'liga')">🇪🇸 Liga</button><button class="chip" onclick="SWC(this,'seriea')">🇮🇹 Serie A</button><button class="chip" onclick="SWC(this,'bundesliga')">🇩🇪 Bundesliga</button></div>
+      <div class="chips" id="divchips"><button class="chip on">Ligue 1</button><button class="chip" onclick="AC(this)">Ligue 2</button></div>
+      <div class="thdr"><span>#</span><span>Club</span><span>J</span><span>G</span><span>N</span><span>D</span><span>Pts</span></div>
+      <div class="scr"><div id="clist"></div><div class="leg" id="clegend"><div class="legi"><div class="ldot" style="background:var(--v);"></div>CAF CL</div><div class="legi"><div class="ldot" style="background:#ef4444;"></div>Relegation</div></div><div style="height:1rem;"></div></div>
+    </div>
+
+    <div class="itab" id="ie">
+      <div class="tb2"><div class="tb2t">Clubs et Equipes</div></div>
+      <div class="tabs"><button class="tab on" onclick="ST(this,'ec')">Clubs</button><button class="tab" onclick="ST(this,'es')">Elephants</button><button class="tab" onclick="ST(this,'eb')">Buteurs</button></div>
+      <div class="scr">
+        <div class="stab on" id="ec"><div class="chips"><button class="chip on">Ligue 1</button><button class="chip" onclick="AC(this)">Ligue 2</button></div><div class="cgrid" id="cgrid"></div></div>
+        <div class="stab" id="es">
+          <div class="selhdr">
+            <div class="selfr"><img class="selflag" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAABkCAMAAABThTnCAAAAMFBMVEX/ggD///8AmkT/iCH9iBUhn0/1+/fw+PP/9/AYn1D8jib19e3r9u8opFgUn07/gABCwDoOAAAAb0lEQVRoge3bSRGAMAAEwRBCgHD5d4uG/VFUj4I2MKWljaOHnde9h5W0Z96msHWpaVhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYf2F9czJ9AcJVThG24Ty9AAAAAElFTkSuQmCC" alt="CI"><span style="font-size:.74rem;font-weight:700;color:rgba(255,255,255,.68);">Cote d Ivoire</span></div>
+            <div class="selname">Les Elephants</div>
+            <div class="selcoach">Coach : Emerse Fae - FIFA 35 - CAN 2024</div>
+            <div class="selst"><div class="ss"><div class="sn">12</div><div class="sl">Victoires</div></div><div class="ss"><div class="sn">3</div><div class="sl">Nuls</div></div><div class="ss"><div class="sn">2</div><div class="sl">Defaites</div></div><div class="ss"><div class="sn">35</div><div class="sl">FIFA</div></div></div>
+          </div>
+          <div class="chips"><button class="chip on">Seniors A</button><button class="chip" onclick="AC(this)">U23</button><button class="chip" onclick="AC(this)">U20</button></div>
+          <div class="phdr">Gardiens</div><div id="sgk"></div>
+          <div class="phdr">Defenseurs</div><div id="sdf"></div>
+          <div class="phdr">Milieux</div><div id="smf"></div>
+          <div class="phdr">Attaquants</div><div id="sat"></div>
+        </div>
+        <div class="stab" id="eb">
+          <div class="chips"><button class="chip on" onclick="SWB(this,'l1')">Ligue 1 CI</button><button class="chip" onclick="SWB(this,'can')">🏆 CAN 2025</button><button class="chip" onclick="SWB(this,'europe')">🌐 Elephants en Europe</button></div>
+          <div id="eb-title" style="padding:.85rem 1.2rem .4rem;font-size:.96rem;font-weight:800;color:var(--t);">Buteurs - MTN Ligue 1</div>
+          <div id="eb-list">
+          <div class="prow" onclick="T('18 buts')"><div style="font-size:1.05rem;font-weight:900;color:#F77F00;width:20px;text-align:center;flex-shrink:0;">1</div><div class="pav">⚽</div><div class="pi"><div class="pname">Kone Ismael</div><div class="pclub">ASEC Mimosas</div></div><span class="pstat">18</span></div>
+          <div class="prow" onclick="T('15 buts')"><div style="font-size:1.05rem;font-weight:900;color:var(--m);width:20px;text-align:center;flex-shrink:0;">2</div><div class="pav">⚽</div><div class="pi"><div class="pname">Traore Adama</div><div class="pclub">Africa Sports</div></div><span class="pstat">15</span></div>
+          <div class="prow" onclick="T('13 buts')"><div style="font-size:1.05rem;font-weight:900;color:var(--m);width:20px;text-align:center;flex-shrink:0;">3</div><div class="pav">⚽</div><div class="pi"><div class="pname">Coulibaly Seydou</div><div class="pclub">SOA</div></div><span class="pstat">13</span></div>
+          <div class="prow" onclick="T('11 buts')"><div style="font-size:1.05rem;font-weight:900;color:var(--m);width:20px;text-align:center;flex-shrink:0;">4</div><div class="pav">⚽</div><div class="pi"><div class="pname">Gbagbi Christ</div><div class="pclub">San Pedro FC</div></div><span class="pstat">11</span></div>
+          </div>
+          <div style="height:1rem;"></div>
+        </div>
+        <div style="height:1rem;"></div>
+      </div>
+    </div>
+
+    <div class="itab" id="in">
+      <div class="tb2"><div class="tb2t">Actualites ScoreCI</div></div>
+      <div class="chips"><button class="chip on" onclick="RAN(this,'all')">Tout</button><button class="chip" onclick="RAN(this,'ci')">🇨🇮 CI</button><button class="chip" onclick="RAN(this,'afrique')">🌍 Afrique</button><button class="chip" onclick="RAN(this,'monde')">🌐 Monde</button></div>
+      <div class="scr" id="zall"></div>
+    </div>
+
+    <div class="itab" id="ifo">
+      <div class="tb2"><div class="tb2t">Forum ScoreCI</div></div>
+      <div class="tabs"><button class="tab on" onclick="ST(this,'ft')">Sujets</button><button class="tab" onclick="ST(this,'fc')">Live Chat</button></div>
+      <div class="scr">
+        <div class="stab on" id="ft"><div class="chips"><button class="chip on">Tout</button><button class="chip" onclick="AC(this)">Ligue 1</button><button class="chip" onclick="AC(this)">Elephants</button></div><div id="flist"></div></div>
+        <div class="stab" id="fc"><div id="clist2"></div></div>
+        <div style="height:1rem;"></div>
+      </div>
+      <div class="cbox">
+        <textarea class="cinp" id="cinp" rows="1" placeholder="Votre commentaire..."></textarea>
+        <button class="csend" onclick="SC()">➤</button>
+      </div>
+    </div>
+
+    <!-- BILLETTERIE -->
+    <div class="itab" id="ish">
+      <div class="tb2"><div class="tb2t">🎟️ Billetterie & Boutique</div></div>
+      <div class="tabs">
+        <button class="tab on" onclick="ST(this,'st-billets')">Billets</button>
+        <button class="tab" onclick="ST(this,'st-boutique')">Boutique</button>
+      </div>
+      <div class="scr">
+        <div class="stab on" id="st-billets">
+          <div class="slbl"><div class="sttl">Billets <em>Disponibles</em></div></div>
+          <div style="margin:0 1.2rem .82rem;background:var(--card);border-radius:16px;overflow:hidden;border:1px solid var(--bdr);box-shadow:0 2px 8px rgba(0,0,0,.06);">
+            <div style="padding:.85rem .97rem;border-bottom:1px dashed var(--bdr);">
+              <div style="font-size:.55rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--v);margin-bottom:.28rem;">🏆 MTN LIGUE 1 — J29</div>
+              <div style="font-size:.97rem;font-weight:800;color:var(--t);line-height:1.2;margin-bottom:.2rem;">ASEC Mimosas vs Stade d Abidjan</div>
+              <div style="font-size:.65rem;color:var(--m);">📅 Sam 28 Juin 2026 · 15h00</div>
+              <div style="font-size:.65rem;color:var(--m);margin-top:.1rem;">🏟️ Stade Felix Houphouet-Boigny</div>
+            </div>
+            <div style="padding:.7rem .97rem;display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;gap:.85rem;">
+                <div style="text-align:center;"><div style="font-size:.53rem;color:var(--m);font-weight:600;text-transform:uppercase;">Tribune</div><div style="font-size:.84rem;font-weight:900;color:#F77F00;">1 000 F</div></div>
+                <div style="text-align:center;"><div style="font-size:.53rem;color:var(--m);font-weight:600;text-transform:uppercase;">Gradins</div><div style="font-size:.84rem;font-weight:900;color:#F77F00;">2 500 F</div></div>
+                <div style="text-align:center;"><div style="font-size:.53rem;color:var(--m);font-weight:600;text-transform:uppercase;">VIP</div><div style="font-size:.84rem;font-weight:900;color:#F77F00;">10 000 F</div></div>
+              </div>
+              <button onclick="WA('Billet ASEC vs Stade Abidjan - Sam 28 Juin')" style="display:flex;align-items:center;gap:.38rem;background:#25D366;color:#fff;border:none;padding:.48rem .95rem;border-radius:10px;font-family:inherit;font-size:.74rem;font-weight:800;cursor:pointer;">💬 Commander</button>
+            </div>
+          </div>
+          <div style="margin:0 1.2rem .82rem;background:var(--card);border-radius:16px;overflow:hidden;border:1px solid var(--bdr);box-shadow:0 2px 8px rgba(0,0,0,.06);">
+            <div style="padding:.85rem .97rem;border-bottom:1px dashed var(--bdr);">
+              <div style="font-size:.55rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--v);margin-bottom:.28rem;">🌍 ELIMINATOIRES CM 2026</div>
+              <div style="font-size:.97rem;font-weight:800;color:var(--t);line-height:1.2;margin-bottom:.2rem;">Cote d Ivoire vs Senegal</div>
+              <div style="font-size:.65rem;color:var(--m);">📅 Mer 2 Juillet 2026 · 20h00</div>
+              <div style="font-size:.65rem;color:var(--m);margin-top:.1rem;">🏟️ Stade Alassane Ouattara, Ebimpe</div>
+            </div>
+            <div style="padding:.7rem .97rem;display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;gap:.85rem;">
+                <div style="text-align:center;"><div style="font-size:.53rem;color:var(--m);font-weight:600;text-transform:uppercase;">Tribune</div><div style="font-size:.84rem;font-weight:900;color:#F77F00;">3 000 F</div></div>
+                <div style="text-align:center;"><div style="font-size:.53rem;color:var(--m);font-weight:600;text-transform:uppercase;">Gradins</div><div style="font-size:.84rem;font-weight:900;color:#F77F00;">5 000 F</div></div>
+                <div style="text-align:center;"><div style="font-size:.53rem;color:var(--m);font-weight:600;text-transform:uppercase;">VIP</div><div style="font-size:.84rem;font-weight:900;color:#F77F00;">25 000 F</div></div>
+              </div>
+              <button onclick="WA('Billet Elephants vs Senegal - 2 Juillet')" style="display:flex;align-items:center;gap:.38rem;background:#25D366;color:#fff;border:none;padding:.48rem .95rem;border-radius:10px;font-family:inherit;font-size:.74rem;font-weight:800;cursor:pointer;">💬 Commander</button>
+            </div>
+          </div>
+          <div style="margin:0 1.2rem .82rem;background:var(--card);border-radius:16px;overflow:hidden;border:1px solid var(--bdr);box-shadow:0 2px 8px rgba(0,0,0,.06);">
+            <div style="padding:.85rem .97rem;border-bottom:1px dashed var(--bdr);">
+              <div style="font-size:.55rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--v);margin-bottom:.28rem;">🏆 COUPE FIF 2026 — QUARTS</div>
+              <div style="font-size:.97rem;font-weight:800;color:var(--t);line-height:1.2;margin-bottom:.2rem;">Africa Sports vs SOA</div>
+              <div style="font-size:.65rem;color:var(--m);">📅 Dim 29 Juin 2026 · 16h00</div>
+              <div style="font-size:.65rem;color:var(--m);margin-top:.1rem;">🏟️ Stade Robert Champroux, Abidjan</div>
+            </div>
+            <div style="padding:.7rem .97rem;display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;gap:.85rem;">
+                <div style="text-align:center;"><div style="font-size:.53rem;color:var(--m);font-weight:600;text-transform:uppercase;">Tribune</div><div style="font-size:.84rem;font-weight:900;color:#F77F00;">500 F</div></div>
+                <div style="text-align:center;"><div style="font-size:.53rem;color:var(--m);font-weight:600;text-transform:uppercase;">Gradins</div><div style="font-size:.84rem;font-weight:900;color:#F77F00;">1 500 F</div></div>
+                <div style="text-align:center;"><div style="font-size:.53rem;color:var(--m);font-weight:600;text-transform:uppercase;">VIP</div><div style="font-size:.84rem;font-weight:900;color:#F77F00;">5 000 F</div></div>
+              </div>
+              <button onclick="WA('Billet Africa Sports vs SOA - Dim 29 Juin')" style="display:flex;align-items:center;gap:.38rem;background:#25D366;color:#fff;border:none;padding:.48rem .95rem;border-radius:10px;font-family:inherit;font-size:.74rem;font-weight:800;cursor:pointer;">💬 Commander</button>
+            </div>
+          </div>
+          <div style="height:1rem;"></div>
+        </div>
+        <div class="stab" id="st-boutique">
+          <div class="slbl"><div class="sttl">Boutique <em>Officielle</em></div></div>
+          <div style="font-size:.7rem;color:var(--m);padding:0 1.2rem .6rem;">Paiement : Orange Money · MTN Money · Wave · WhatsApp</div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.7rem;padding:0 1.2rem 1.2rem;">
+            <div onclick="WA('Maillot Elephants 2025/26 - 25 000 F')" style="background:var(--card);border-radius:14px;overflow:hidden;cursor:pointer;border:1px solid var(--bdr);box-shadow:0 2px 6px rgba(0,0,0,.05);">
+              <div style="height:108px;background:linear-gradient(135deg,#007A34,#009A44);display:flex;align-items:center;justify-content:center;font-size:2.7rem;">👕</div>
+              <div style="padding:.52rem .62rem .72rem;">
+                <div style="font-size:.72rem;font-weight:700;color:var(--t);margin-bottom:.18rem;line-height:1.3;">Maillot Elephants 2025/26</div>
+                <div><span style="font-size:.88rem;font-weight:900;color:#F77F00;">25 000 F</span><span style="font-size:.58rem;color:var(--m);text-decoration:line-through;margin-left:.2rem;">30 000 F</span></div>
+              </div>
+            </div>
+            <div onclick="WA('Casquette ScoreCI - 8 000 F')" style="background:var(--card);border-radius:14px;overflow:hidden;cursor:pointer;border:1px solid var(--bdr);box-shadow:0 2px 6px rgba(0,0,0,.05);">
+              <div style="height:108px;background:linear-gradient(135deg,#007A34,#009A44);display:flex;align-items:center;justify-content:center;font-size:2.7rem;">🧢</div>
+              <div style="padding:.52rem .62rem .72rem;">
+                <div style="font-size:.72rem;font-weight:700;color:var(--t);margin-bottom:.18rem;line-height:1.3;">Casquette Officielle ScoreCI</div>
+                <div><span style="font-size:.88rem;font-weight:900;color:#F77F00;">8 000 F</span></div>
+              </div>
+            </div>
+            <div onclick="WA('Ballon Ligue 1 - 15 000 F')" style="background:var(--card);border-radius:14px;overflow:hidden;cursor:pointer;border:1px solid var(--bdr);box-shadow:0 2px 6px rgba(0,0,0,.05);">
+              <div style="height:108px;background:linear-gradient(135deg,#007A34,#009A44);display:flex;align-items:center;justify-content:center;font-size:2.7rem;">⚽</div>
+              <div style="padding:.52rem .62rem .72rem;">
+                <div style="font-size:.72rem;font-weight:700;color:var(--t);margin-bottom:.18rem;line-height:1.3;">Ballon Officiel MTN Ligue 1</div>
+                <div><span style="font-size:.88rem;font-weight:900;color:#F77F00;">15 000 F</span></div>
+              </div>
+            </div>
+            <div onclick="WA('Echarpe Elephants - 5 000 F')" style="background:var(--card);border-radius:14px;overflow:hidden;cursor:pointer;border:1px solid var(--bdr);box-shadow:0 2px 6px rgba(0,0,0,.05);">
+              <div style="height:108px;background:linear-gradient(135deg,#007A34,#009A44);display:flex;align-items:center;justify-content:center;font-size:2.7rem;">🧣</div>
+              <div style="padding:.52rem .62rem .72rem;">
+                <div style="font-size:.72rem;font-weight:700;color:var(--t);margin-bottom:.18rem;line-height:1.3;">Echarpe Elephants CI</div>
+                <div><span style="font-size:.88rem;font-weight:900;color:#F77F00;">5 000 F</span></div>
+              </div>
+            </div>
+          </div>
+          <div style="height:1rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AFRIQUE & MONDE -->
+    <div class="itab" id="iw">
+      <div class="tb2"><div class="tb2t">🌍 Afrique &amp; Monde</div></div>
+      <div class="chips" id="wzonechips">
+        <button class="chip on" onclick="SWZ(this,'afrique')">🌍 Afrique</button>
+        <button class="chip" onclick="SWZ(this,'monde')">🌐 Monde</button>
+      </div>
+      <div class="chips" id="wcompchips"></div>
+      <div class="scr">
+        <div class="clashdr" style="margin:0 0 .1rem;"><div class="clastitle" id="wctitle" style="font-size:1.15rem;">CAN 2025</div><div class="classub" id="wcsub">Groupe A</div></div>
+        <div class="thdr"><span>#</span><span>Equipe / Club</span><span>J</span><span>G</span><span>N</span><span>D</span><span>Pts</span></div>
+        <div id="wlist"></div>
+        <div class="slbl"><div class="sttl">Actualites <em id="wcomplabel"></em></div></div>
+        <div id="wnews"></div>
+        <div style="height:1rem;"></div>
+      </div>
+    </div>
+
+        <div class="cdet" id="cdet"><div id="cdhc"></div><div class="cdbody" id="cdbc"></div></div>
+    <div class="pdet" id="pdet"><div id="pdhc"></div><div class="pdbody" id="pdbc"></div></div>
+  </div>
+
+  <nav class="bnav">
+    <button class="bn on" id="b0" onclick="GT('ih',0)"><span class="ic">🏠</span><span id="b0txt">Accueil</span></button>
+    <button class="bn" id="b1" onclick="GT('im',1)"><span class="ic">⚽</span><span id="b1txt">Matchs</span></button>
+    <button class="bn" id="b2" onclick="GT('ic',2)"><span class="ic">📊</span><span id="b2txt">Classe.</span></button>
+    <button class="bn" id="b3" onclick="GT('ie',3)"><span class="ic">🐘</span><span id="b3txt">Equipes</span></button>
+    <button class="bn" id="b4" onclick="GT('ifo',4)"><span class="ic">💬</span><span id="b4txt">Forum</span></button>
+    <button class="bn" id="b5" onclick="GT('ish',5)"><span class="ic">🎟️</span><span id="b5txt">Billets</span></button>
+    <button class="bn" id="b6" onclick="GT('iw',6)"><span class="ic">🌍</span><span id="b6txt">Monde</span></button>
+  </nav>
+</div>
+</div>
+<div class="toast" id="tst"></div>
+<script>
+// URL de votre proxy API-FOOTBALL une fois deploye (voir README du proxy).
+// Laisser vide = ScoreCI continue d'utiliser les donnees de demonstration.
+var API_BASE = "";
+function DEC(s){return decodeURIComponent(atob(s).split("").map(function(c){return "%"+("00"+c.charCodeAt(0).toString(16)).slice(-2);}).join(""));}
+var CLUBS=JSON.parse(DEC("W3siaWQiOiAiYXNlYyIsICJuYW1lIjogIkFTRUMgTWltb3NhcyIsICJlbW9qaSI6ICJcdWQ4M2RcdWRmZTAiLCAiY29sb3IiOiAiIzdEMTEyOCIsICJkaXYiOiAiTGlndWUgMSIsICJyYW5nIjogMSwgInB0cyI6IDU5LCAiaiI6IDI4LCAiZyI6IDE4LCAibiI6IDUsICJkIjogNSwgImJwIjogNTIsICJiYyI6IDIyLCAic3RhZGUiOiAiU3RhZGUgRkhCIiwgInZpbGxlIjogIkFiaWRqYW4iLCAiZm9uZGUiOiAxOTQ4LCAiY29hY2giOiAiV2lsZnJpZCBOemllIiwgImpvdWV1cnMiOiBbeyJub20iOiAiS29uZSBJc21hZWwiLCAicG9zdGUiOiAiQXR0YXF1YW50IiwgIm51bSI6IDksICJhZ2UiOiAyNCwgInN0YXQiOiAiMTggYnV0cyJ9LCB7Im5vbSI6ICJTb3JvIEFiZG91bGF5ZSIsICJwb3N0ZSI6ICJNaWxpZXUiLCAibnVtIjogOCwgImFnZSI6IDIyLCAic3RhdCI6ICI2IHBhc3NlcyJ9XX0sIHsiaWQiOiAiYWZyaWNhIiwgIm5hbWUiOiAiQWZyaWNhIFNwb3J0cyIsICJlbW9qaSI6ICJcdWQ4M2RcdWRmZTIiLCAiY29sb3IiOiAiIzE2NjUzNCIsICJkaXYiOiAiTGlndWUgMSIsICJyYW5nIjogMiwgInB0cyI6IDU0LCAiaiI6IDI4LCAiZyI6IDE2LCAibiI6IDYsICJkIjogNiwgImJwIjogNDQsICJiYyI6IDI4LCAic3RhZGUiOiAiU3RhZGUgQ2hhbXByb3V4IiwgInZpbGxlIjogIkFiaWRqYW4iLCAiZm9uZGUiOiAxOTM4LCAiY29hY2giOiAiT3VtYXIgRGlhbGxvIiwgImpvdWV1cnMiOiBbeyJub20iOiAiVHJhb3JlIEFkYW1hIiwgInBvc3RlIjogIkF0dGFxdWFudCIsICJudW0iOiAxMSwgImFnZSI6IDIzLCAic3RhdCI6ICIxNSBidXRzIn0sIHsibm9tIjogIktvbmF0ZSBTZWtvdSIsICJwb3N0ZSI6ICJNaWxpZXUiLCAibnVtIjogNiwgImFnZSI6IDI1LCAic3RhdCI6ICI1IHBhc3NlcyJ9XX0sIHsiaWQiOiAic29hIiwgIm5hbWUiOiAiU09BIiwgImVtb2ppIjogIlx1ZDgzZFx1ZGQzNCIsICJjb2xvciI6ICIjOTkxYjFiIiwgImRpdiI6ICJMaWd1ZSAxIiwgInJhbmciOiAzLCAicHRzIjogNTIsICJqIjogMjgsICJnIjogMTUsICJuIjogNywgImQiOiA2LCAiYnAiOiA0MSwgImJjIjogMjUsICJzdGFkZSI6ICJTdGFkZSBZYW1vdXNzb3Vrcm8iLCAidmlsbGUiOiAiWWFtb3Vzc291a3JvIiwgImZvbmRlIjogMTk2NiwgImNvYWNoIjogIlBhdWwgS29mZmkiLCAiam91ZXVycyI6IFt7Im5vbSI6ICJDb3VsaWJhbHkgU2V5ZG91IiwgInBvc3RlIjogIkF0dGFxdWFudCIsICJudW0iOiAxMCwgImFnZSI6IDI1LCAic3RhdCI6ICIxMyBidXRzIn0sIHsibm9tIjogIkJhaCBJYnJhaGltYSIsICJwb3N0ZSI6ICJNaWxpZXUiLCAibnVtIjogNywgImFnZSI6IDI0LCAic3RhdCI6ICI0IHBhc3NlcyJ9XX0sIHsiaWQiOiAiZ2Fnbm9hIiwgIm5hbWUiOiAiU0MgR2Fnbm9hIiwgImVtb2ppIjogIlx1ZDgzZFx1ZGZlNCIsICJjb2xvciI6ICIjOTI0MDBlIiwgImRpdiI6ICJMaWd1ZSAxIiwgInJhbmciOiA0LCAicHRzIjogNDgsICJqIjogMjgsICJnIjogMTQsICJuIjogNiwgImQiOiA4LCAiYnAiOiAzOCwgImJjIjogMjksICJzdGFkZSI6ICJTdGFkZSBHYWdub2EiLCAidmlsbGUiOiAiR2Fnbm9hIiwgImZvbmRlIjogMTk2MCwgImNvYWNoIjogIktvbmUgTGFtaW5lIiwgImpvdWV1cnMiOiBbeyJub20iOiAiRGlvbWFuZGUgTGFjaW5hIiwgInBvc3RlIjogIkF0dGFxdWFudCIsICJudW0iOiA5LCAiYWdlIjogMjIsICJzdGF0IjogIjEwIGJ1dHMifV19LCB7ImlkIjogInNhbnBlZHJvIiwgIm5hbWUiOiAiU2FuIFBlZHJvIEZDIiwgImVtb2ppIjogIlx1ZDgzZFx1ZGZlMSIsICJjb2xvciI6ICIjODU0ZDBlIiwgImRpdiI6ICJMaWd1ZSAxIiwgInJhbmciOiA1LCAicHRzIjogNDYsICJqIjogMjgsICJnIjogMTMsICJuIjogNywgImQiOiA4LCAiYnAiOiAzNiwgImJjIjogMzAsICJzdGFkZSI6ICJTdGFkZSBTYW4gUGVkcm8iLCAidmlsbGUiOiAiU2FuIFBlZHJvIiwgImZvbmRlIjogMTk3NSwgImNvYWNoIjogIkFrYSBLb3Vhc3NpIiwgImpvdWV1cnMiOiBbeyJub20iOiAiR2JhZ2JpIENocmlzdCIsICJwb3N0ZSI6ICJBdHRhcXVhbnQiLCAibnVtIjogMTAsICJhZ2UiOiAyNCwgInN0YXQiOiAiMTEgYnV0cyJ9XX0sIHsiaWQiOiAic2V3ZSIsICJuYW1lIjogIlNld2UgU3BvcnRzIiwgImVtb2ppIjogIlx1MjZhYiIsICJjb2xvciI6ICIjMWYyOTM3IiwgImRpdiI6ICJMaWd1ZSAxIiwgInJhbmciOiA2LCAicHRzIjogNDQsICJqIjogMjgsICJnIjogMTIsICJuIjogOCwgImQiOiA4LCAiYnAiOiAzNCwgImJjIjogMjgsICJzdGFkZSI6ICJTdGFkZSBkZSBNYW4iLCAidmlsbGUiOiAiTWFuIiwgImZvbmRlIjogMTk2OSwgImNvYWNoIjogIkJhbWJhIENoZWljayIsICJqb3VldXJzIjogW3sibm9tIjogIkRpZ2JldSBNYXJjZWwiLCAicG9zdGUiOiAiQXR0YXF1YW50IiwgIm51bSI6IDksICJhZ2UiOiAyMywgInN0YXQiOiAiMTAgYnV0cyJ9XX0sIHsiaWQiOiAid2lsbGkiLCAibmFtZSI6ICJXaWxsaWFtc3ZpbGxlIEFDIiwgImVtb2ppIjogIlx1ZDgzZFx1ZGZlMyIsICJjb2xvciI6ICIjNGMxZDk1IiwgImRpdiI6ICJMaWd1ZSAxIiwgInJhbmciOiA3LCAicHRzIjogNDEsICJqIjogMjgsICJnIjogMTEsICJuIjogOCwgImQiOiA5LCAiYnAiOiAzMywgImJjIjogMzEsICJzdGFkZSI6ICJTdGFkZSBXaWxsaWFtc3ZpbGxlIiwgInZpbGxlIjogIkFiaWRqYW4iLCAiZm9uZGUiOiAxOTcyLCAiY29hY2giOiAiQ2lzc2UgTW9yeSIsICJqb3VldXJzIjogW3sibm9tIjogIk4gRGEgUGF0cmljayIsICJwb3N0ZSI6ICJBdHRhcXVhbnQiLCAibnVtIjogMTEsICJhZ2UiOiAyNCwgInN0YXQiOiAiOSBidXRzIn1dfV0="));
+var JOUEURS=JSON.parse(DEC("W3sibm9tIjogIllhaGlhIEZvZmFuYSIsICJudW0iOiAxLCAicG9zdGUiOiAiR2FyZGllbiIsICJwb3NDbGFzcyI6ICJnayIsICJjbHViIjogIkxvcmllbnQiLCAicGF5cyI6ICJGcmFuY2UiLCAiYWdlIjogMjcsICJjYXBzIjogMzgsICJidXRzIjogMCwgImVtb2ppIjogIlx1ZDgzZVx1ZGRlNCJ9LCB7Im5vbSI6ICJTZXJnZSBBdXJpZXIiLCAibnVtIjogMywgInBvc3RlIjogIkRlZmVuc2V1ciIsICJwb3NDbGFzcyI6ICJkZiIsICJjbHViIjogIk5vdHRpbmdoYW0gRm9yZXN0IiwgInBheXMiOiAiQW5nbGV0ZXJyZSIsICJhZ2UiOiAzMiwgImNhcHMiOiA4MCwgImJ1dHMiOiA2LCAiZW1vamkiOiAiXHVkODNkXHVkZWUxXHVmZTBmIn0sIHsibm9tIjogIk9kaWxvbiBLb3Nzb3Vub3UiLCAibnVtIjogNSwgInBvc3RlIjogIkRlZmVuc2V1ciIsICJwb3NDbGFzcyI6ICJkZiIsICJjbHViIjogIkJheWVyIExldmVya3VzZW4iLCAicGF5cyI6ICJBbGxlbWFnbmUiLCAiYWdlIjogMjQsICJjYXBzIjogMjksICJidXRzIjogMCwgImVtb2ppIjogIlx1ZDgzZFx1ZGVlMVx1ZmUwZiJ9LCB7Im5vbSI6ICJGcmFuY2sgS2Vzc2llIiwgIm51bSI6IDgsICJwb3N0ZSI6ICJNaWxpZXUiLCAicG9zQ2xhc3MiOiAibWYiLCAiY2x1YiI6ICJBbC1BaGxpIiwgInBheXMiOiAiQXJhYmllIFNhb3VkaXRlIiwgImFnZSI6IDI4LCAiY2FwcyI6IDcyLCAiYnV0cyI6IDEyLCAiZW1vamkiOiAiXHUyNmExIn0sIHsibm9tIjogIkplYW4gTWljaGFlbCBTZXJpIiwgIm51bSI6IDYsICJwb3N0ZSI6ICJNaWxpZXUiLCAicG9zQ2xhc3MiOiAibWYiLCAiY2x1YiI6ICJHYWxhdGFzYXJheSIsICJwYXlzIjogIlR1cnF1aWUiLCAiYWdlIjogMzMsICJjYXBzIjogNjUsICJidXRzIjogNCwgImVtb2ppIjogIlx1MjZhMSJ9LCB7Im5vbSI6ICJTaW1vbiBBZGluZ3JhIiwgIm51bSI6IDEwLCAicG9zdGUiOiAiQXR0YXF1YW50IiwgInBvc0NsYXNzIjogImF0IiwgImNsdWIiOiAiQnJpZ2h0b24iLCAicGF5cyI6ICJBbmdsZXRlcnJlIiwgImFnZSI6IDIzLCAiY2FwcyI6IDIxLCAiYnV0cyI6IDUsICJlbW9qaSI6ICJcdWQ4M2RcdWRjYWIifSwgeyJub20iOiAiU2ViYXN0aWVuIEhhbGxlciIsICJudW0iOiA3LCAicG9zdGUiOiAiQXR0YXF1YW50IiwgInBvc0NsYXNzIjogImF0IiwgImNsdWIiOiAiRG9ydG11bmQiLCAicGF5cyI6ICJBbGxlbWFnbmUiLCAiYWdlIjogMzAsICJjYXBzIjogMzgsICJidXRzIjogMTQsICJlbW9qaSI6ICJcdWQ4M2RcdWRkMjUifSwgeyJub20iOiAiQW1hZCBEaWFsbG8iLCAibnVtIjogMTcsICJwb3N0ZSI6ICJBdHRhcXVhbnQiLCAicG9zQ2xhc3MiOiAiYXQiLCAiY2x1YiI6ICJNYW4gVW5pdGVkIiwgInBheXMiOiAiQW5nbGV0ZXJyZSIsICJhZ2UiOiAyMiwgImNhcHMiOiAxOCwgImJ1dHMiOiAzLCAiZW1vamkiOiAiXHUyNmExIn0sIHsibm9tIjogIk5pY29sYXMgUGVwZSIsICJudW0iOiAxMSwgInBvc3RlIjogIkF0dGFxdWFudCIsICJwb3NDbGFzcyI6ICJhdCIsICJjbHViIjogIlJDIExlbnMiLCAicGF5cyI6ICJGcmFuY2UiLCAiYWdlIjogMjksICJjYXBzIjogNTIsICJidXRzIjogMTEsICJlbW9qaSI6ICJcdTJiNTAifV0="));
+var NEWS=JSON.parse(DEC("W3sidGl0bGUiOiAiTGVzIEVsZXBoYW50cyBxdWFsaWZpZXMgcG91ciBsZXMgcXVhcnRzIGRlcyBlbGltaW5hdG9pcmVzIE1vbmRpYWwgMjAyNiIsICJkIjogIjJoIiwgInNyYyI6ICJTY29yZUNJIiwgImljIjogIvCfkJgiLCAiYmciOiAiIzAwNUEyOCIsICJ6b25lIjogIm1vbmRlIn0sIHsidGl0bGUiOiAiQVNFQyBNaW1vc2FzIDogNTkgcHRzIGV0IGxlYWRlciBpbmNvbnRlc3RlIGRlIGxhIE1UTiBMaWd1ZSAxIiwgImQiOiAiMThoIiwgInNyYyI6ICJMaWd1ZSAxIiwgImljIjogIuKavSIsICJiZyI6ICIjN0QxMTI4IiwgInpvbmUiOiAiY2kifSwgeyJ0aXRsZSI6ICJBZnJpY2EgU3BvcnRzIHNpbXBvc2UgMy0xIGEgZG9taWNpbGUiLCAiZCI6ICIyMmgiLCAic3JjIjogIkxpZ3VlIDEiLCAiaWMiOiAi8J+foiIsICJiZyI6ICIjMTY2NTM0IiwgInpvbmUiOiAiY2kifSwgeyJ0aXRsZSI6ICJNZXJjYXRvIDogY2x1YnMgaXZvaXJpZW5zIGFjdGlmcyBzdXIgbGUgbWFyY2hlIiwgImQiOiAiMjZoIiwgInNyYyI6ICJUcmFuc2ZlcnRzIiwgImljIjogIvCfkZUiLCAiYmciOiAiIzg1NGQwZSIsICJ6b25lIjogImNpIn0sIHsidGl0bGUiOiAiVTIwIDogbGlzdGUgZGVzIDIzIHBvdXIgbGUgQ2hhbXBpb25uYXQgVUZPQS1CIDIwMjYiLCAiZCI6ICIzMGgiLCAic3JjIjogIlNlbGVjdGlvbnMiLCAiaWMiOiAi8J+lhyIsICJiZyI6ICIjMWU0MGFmIiwgInpvbmUiOiAiY2kifSwgeyJ0aXRsZSI6ICJTdGFkZSBBbGFzc2FuZSBPdWF0dGFyYSByZW5vdmUgcG91ciBsZXMgRWxlcGhhbnRzIiwgImQiOiAiMzZoIiwgInNyYyI6ICJJbmZyYSIsICJpYyI6ICLwn4+f77iPIiwgImJnIjogIiMzNzQxNTEiLCAiem9uZSI6ICJjaSJ9LCB7InRpdGxlIjogIlNPQSBlY3Jhc2UgbGUgU3RhZGUgQWJpZGphbiAzLTAiLCAiZCI6ICI0MmgiLCAic3JjIjogIkxpZ3VlIDEiLCAiaWMiOiAi8J+UtCIsICJiZyI6ICIjOTkxYjFiIiwgInpvbmUiOiAiY2kifSwgeyJ0aXRsZSI6ICJDb3VwZSBGSUYgOiBsZXMgcXVhcnRzIGRlIGZpbmFsZSBjZSB3ZWVrZW5kIiwgImQiOiAiNDhoIiwgInNyYyI6ICJDb3VwZSBGSUYiLCAiaWMiOiAi8J+PhiIsICJiZyI6ICIjZDk3NzA2IiwgInpvbmUiOiAiY2kifSwgeyJ0aXRsZSI6ICJDQU4gMjAyNSA6IGxhIENvdGUgZCBJdm9pcmUgdGVybWluZSBsZWFkZXIgaW52YWluY3UgZHUgZ3JvdXBlIEEiLCAiZCI6ICI1aCIsICJzcmMiOiAiQ0FOIDIwMjUiLCAiaWMiOiAi8J+PhiIsICJiZyI6ICIjMGE1YzM2IiwgInpvbmUiOiAiYWZyaXF1ZSIsICJjb21wIjogImNhbiJ9LCB7InRpdGxlIjogIkxpZ3VlIGRlcyBDaGFtcGlvbnMgQ0FGIDogQVNFQyBNaW1vc2FzIGFycmFjaGUgbGUgbnVsIGEgbCBleHRlcmlldXIiLCAiZCI6ICI5aCIsICJzcmMiOiAiQ0FGIENMIiwgImljIjogIvCfjI0iLCAiYmciOiAiIzFlM2E4YSIsICJ6b25lIjogImFmcmlxdWUiLCAiY29tcCI6ICJjYWZjbCJ9LCB7InRpdGxlIjogIlF1YWxpZnMgTW9uZGlhbCAyMDI2IDogbGVzIEVsZXBoYW50cyBhdHRlbmR1cyBkZSBwaWVkIGZlcm1lIGZhY2UgYXUgU2VuZWdhbCIsICJkIjogIjE0aCIsICJzcmMiOiAiUXVhbGlmcyBNb25kaWFsIiwgImljIjogIvCfjJAiLCAiYmciOiAiIzEzNGU0YSIsICJ6b25lIjogIm1vbmRlIiwgImNvbXAiOiAicXVhbGlmcyJ9LCB7InRpdGxlIjogIlByZW1pZXIgTGVhZ3VlIDogU2ltb24gQWRpbmdyYSBkZWNpc2lmIGF2ZWMgQnJpZ2h0b24iLCAiZCI6ICIyMGgiLCAic3JjIjogIlByZW1pZXIgTGVhZ3VlIiwgImljIjogIvCfj7QiLCAiYmciOiAiIzdjMmQxMiIsICJ6b25lIjogIm1vbmRlIiwgImNvbXAiOiAicGwifSwgeyJ0aXRsZSI6ICJCdW5kZXNsaWdhIDogU2ViYXN0aWVuIEhhbGxlciByZXRyb3V2ZSBsZSBjaGVtaW4gZGVzIGZpbGV0cyBhdmVjIERvcnRtdW5kIiwgImQiOiAiMjRoIiwgInNyYyI6ICJCdW5kZXNsaWdhIiwgImljIjogIvCfh6nwn4eqIiwgImJnIjogIiMxMTE4MjciLCAiem9uZSI6ICJtb25kZSIsICJjb21wIjogImJ1bmRlc2xpZ2EifSwgeyJ0aXRsZSI6ICJMaWd1ZSAxIChGcmFuY2UpIDogTmljb2xhcyBQZXBlIHJlbGFuY2Ugc2Egc2Fpc29uIGF2ZWMgbGUgUkMgTGVucyIsICJkIjogIjMyaCIsICJzcmMiOiAiTGlndWUgMSBGUiIsICJpYyI6ICLwn4er8J+HtyIsICJiZyI6ICIjMWQ0ZWQ4IiwgInpvbmUiOiAibW9uZGUiLCAiY29tcCI6ICJsMWZyIn1d"));
+var FTOPICS=JSON.parse(DEC("W3sidGl0bGUiOiAiQVNFQyB2YS10LWlsIHJlbXBvcnRlciBsZSB0aXRyZSBjZXR0ZSBzYWlzb24iLCAicmVwbGllcyI6IDI0LCAidmlld3MiOiAzMTIsICJ0YWciOiAiTGlndWUgMSIsICJ0aW1lIjogIklsIHkgYSAxMiBtaW4ifSwgeyJ0aXRsZSI6ICJWb3RyZSBwcm9ub3N0aWMgcG91ciBFbGVwaGFudHMgdnMgU2VuZWdhbCIsICJyZXBsaWVzIjogNjcsICJ2aWV3cyI6IDg5MSwgInRhZyI6ICJFbGVwaGFudHMiLCAidGltZSI6ICJJbCB5IGEgMjggbWluIn0sIHsidGl0bGUiOiAiTWVpbGxldXIgam91ZXVyIGRlIExpZ3VlIDEgY2V0dGUgc2Fpc29uIiwgInJlcGxpZXMiOiA0MywgInZpZXdzIjogNTY3LCAidGFnIjogIkxpZ3VlIDEiLCAidGltZSI6ICJJbCB5IGEgMWgifSwgeyJ0aXRsZSI6ICJTT0EgcGV1dC1pbCBlbmNvcmUgcmF0dHJhcGVyIEFmcmljYSBTcG9ydHMiLCAicmVwbGllcyI6IDE4LCAidmlld3MiOiAyMzQsICJ0YWciOiAiTGlndWUgMSIsICJ0aW1lIjogIklsIHkgYSAyaCJ9LCB7InRpdGxlIjogIlJ1bWV1cnMgbWVyY2F0byA6IHF1aSBzaWduZSBhIEFTRUMgY2V0IGV0ZSIsICJyZXBsaWVzIjogMzEsICJ2aWV3cyI6IDQ0NSwgInRhZyI6ICJUcmFuc2ZlcnRzIiwgInRpbWUiOiAiSWwgeSBhIDNoIn1d"));
+var STANDINGS={
+  can:{label:"CAN 2025 - Groupe A",sub:"Cote d Ivoire, Guinee, Egypte, Mozambique",teams:[
+    {emoji:"🐘",name:"Cote d Ivoire",color:"#F77F00",j:3,g:3,n:0,d:0,pts:9},
+    {emoji:"🦅",name:"Guinee",color:"#CE1126",j:3,g:2,n:0,d:1,pts:6},
+    {emoji:"🐫",name:"Egypte",color:"#000000",j:3,g:1,n:0,d:2,pts:3},
+    {emoji:"🦁",name:"Mozambique",color:"#00A651",j:3,g:0,n:0,d:3,pts:0}
+  ]},
+  cafcl:{label:"Ligue des Champions CAF - Poule A",sub:"Phase de groupes 2025/2026",teams:[
+    {emoji:"🔴",name:"Al Ahly (Egypte)",color:"#B91C1C",j:4,g:3,n:1,d:0,pts:10},
+    {emoji:"🟡",name:"Esperance de Tunis",color:"#CA8A04",j:4,g:2,n:1,d:1,pts:7},
+    {emoji:"🟢",name:"Mamelodi Sundowns",color:"#166534",j:4,g:2,n:0,d:2,pts:6},
+    {emoji:"🟠",name:"ASEC Mimosas",color:"#7D1128",j:4,g:1,n:2,d:1,pts:5},
+    {emoji:"🔵",name:"Simba SC (Tanzanie)",color:"#1D4ED8",j:4,g:1,n:0,d:3,pts:3},
+    {emoji:"⚫",name:"TP Mazembe",color:"#111827",j:4,g:0,n:2,d:2,pts:2}
+  ]},
+  qualifs:{label:"Qualifs Mondial 2026 - Zone Afrique Gr. D",sub:"Vers la Coupe du Monde 2026",teams:[
+    {emoji:"🐘",name:"Cote d Ivoire",color:"#F77F00",j:5,g:4,n:1,d:0,pts:13},
+    {emoji:"🦁",name:"Senegal",color:"#00853F",j:5,g:3,n:1,d:1,pts:10},
+    {emoji:"🦅",name:"Cameroun",color:"#007A5E",j:5,g:2,n:1,d:2,pts:7},
+    {emoji:"⭐",name:"Gabon",color:"#009E60",j:5,g:0,n:1,d:4,pts:1}
+  ]},
+  l1fr:{label:"Ligue 1 (France) 2025/2026",sub:"Championnat de France",teams:[
+    {emoji:"🔵",name:"Paris Saint-Germain",color:"#001E62",j:22,g:17,n:3,d:2,pts:54},
+    {emoji:"🔴",name:"AS Monaco",color:"#E51B22",j:22,g:14,n:4,d:4,pts:46},
+    {emoji:"⚪",name:"Olympique de Marseille",color:"#2185C5",j:22,g:12,n:5,d:5,pts:41},
+    {emoji:"🔴",name:"LOSC Lille",color:"#C8102E",j:22,g:11,n:6,d:5,pts:39},
+    {emoji:"🔴",name:"RC Lens",color:"#EF1C29",j:22,g:10,n:6,d:6,pts:36},
+    {emoji:"⚪",name:"Olympique Lyonnais",color:"#1B3F94",j:22,g:9,n:7,d:6,pts:34}
+  ]},
+  pl:{label:"Premier League 2025/2026",sub:"Championnat d Angleterre",teams:[
+    {emoji:"🔴",name:"Liverpool",color:"#C8102E",j:23,g:16,n:4,d:3,pts:52},
+    {emoji:"⚪",name:"Arsenal",color:"#EF0107",j:23,g:15,n:5,d:3,pts:50},
+    {emoji:"🔵",name:"Manchester City",color:"#6CABDD",j:23,g:14,n:5,d:4,pts:47},
+    {emoji:"🔵",name:"Chelsea",color:"#034694",j:23,g:12,n:6,d:5,pts:42},
+    {emoji:"⚫",name:"Nottingham Forest",color:"#DD0000",j:23,g:11,n:6,d:6,pts:39},
+    {emoji:"🔴",name:"Manchester United",color:"#DA291C",j:23,g:9,n:7,d:7,pts:34}
+  ]},
+  liga:{label:"Liga (Espagne) 2025/2026",sub:"Championnat d Espagne",teams:[
+    {emoji:"⚪",name:"Real Madrid",color:"#FEBE10",j:22,g:16,n:4,d:2,pts:52},
+    {emoji:"🔵",name:"FC Barcelone",color:"#A50044",j:22,g:15,n:4,d:3,pts:49},
+    {emoji:"🔴",name:"Atletico Madrid",color:"#CB3524",j:22,g:13,n:5,d:4,pts:44},
+    {emoji:"🔴",name:"Athletic Bilbao",color:"#EE2523",j:22,g:11,n:6,d:5,pts:39},
+    {emoji:"🟡",name:"Villarreal",color:"#FFE667",j:22,g:10,n:6,d:6,pts:36},
+    {emoji:"🔵",name:"Real Sociedad",color:"#0067B1",j:22,g:8,n:7,d:7,pts:31}
+  ]},
+  seriea:{label:"Serie A (Italie) 2025/2026",sub:"Championnat d Italie",teams:[
+    {emoji:"🔵",name:"Napoli",color:"#12A0D7",j:22,g:15,n:5,d:2,pts:50},
+    {emoji:"⚫",name:"Inter Milan",color:"#010E80",j:22,g:15,n:4,d:3,pts:49},
+    {emoji:"⚪",name:"Juventus",color:"#000000",j:22,g:13,n:6,d:3,pts:45},
+    {emoji:"🔵",name:"Atalanta",color:"#1E71B8",j:22,g:12,n:5,d:5,pts:41},
+    {emoji:"🔴",name:"AC Milan",color:"#FB090B",j:22,g:11,n:6,d:5,pts:39},
+    {emoji:"🔴",name:"Bologna",color:"#A6192E",j:22,g:9,n:7,d:6,pts:34}
+  ]},
+  bundesliga:{label:"Bundesliga (Allemagne) 2025/2026",sub:"Championnat d Allemagne",teams:[
+    {emoji:"🔴",name:"Bayern Munich",color:"#DC052D",j:20,g:16,n:2,d:2,pts:50},
+    {emoji:"⚫",name:"Bayer Leverkusen",color:"#E32221",j:20,g:13,n:4,d:3,pts:43},
+    {emoji:"⚪",name:"RB Leipzig",color:"#DD0741",j:20,g:12,n:4,d:4,pts:40},
+    {emoji:"🟡",name:"Borussia Dortmund",color:"#FDE100",j:20,g:10,n:6,d:4,pts:36},
+    {emoji:"⚫",name:"Eintracht Frankfurt",color:"#E1000F",j:20,g:9,n:6,d:5,pts:33},
+    {emoji:"⚪",name:"VfB Stuttgart",color:"#E32219",j:20,g:8,n:6,d:6,pts:30}
+  ]}
+};
+var COMPS=[
+  {id:"can",zone:"afrique",label:"CAN 2025",flag:"🏆"},
+  {id:"cafcl",zone:"afrique",label:"CAF Champions League",flag:"🌍"},
+  {id:"qualifs",zone:"monde",label:"Qualifs Mondial 2026",flag:"🌐"},
+  {id:"l1fr",zone:"monde",label:"Ligue 1 (France)",flag:"🇫🇷"},
+  {id:"pl",zone:"monde",label:"Premier League",flag:"🏴"},
+  {id:"liga",zone:"monde",label:"Liga (Espagne)",flag:"🇪🇸"},
+  {id:"seriea",zone:"monde",label:"Serie A (Italie)",flag:"🇮🇹"},
+  {id:"bundesliga",zone:"monde",label:"Bundesliga",flag:"🇩🇪"}
+];
+var CAN_SCORERS=[
+  {nom:"Sebastien Haller",club:"Cote d Ivoire",buts:4},
+  {nom:"Serhou Guirassy",club:"Guinee",buts:3},
+  {nom:"Mohamed Salah",club:"Egypte",buts:2}
+];
+
+var comments=[
+  {id:1,user:"Kouame F.",av:"K",text:"ASEC va tout ecraser cette saison",time:"14:23",likes:12},
+  {id:2,user:"Aminata S.",av:"A",text:"Africa Sports joue bien",time:"14:31",likes:8},
+  {id:3,user:"Yao Eric",av:"Y",text:"Les Elephants au Mondial 2026",time:"14:45",likes:25}
+];
+var dark=localStorage.getItem("dk")==="1";
+function AD(){document.getElementById("app").setAttribute("data-dark",dark?"1":"0");var t=document.getElementById("dkt");if(t)t.classList.toggle("on",dark);}
+function DK(){dark=!dark;localStorage.setItem("dk",dark?"1":"0");AD();T(dark?"Mode sombre":"Mode clair");}
+AD();
+function P(id){document.querySelectorAll(".pg").forEach(function(p){p.classList.remove("on");});document.getElementById(id).classList.add("on");}
+function GT(id,n){
+  document.querySelectorAll(".itab").forEach(function(t){t.classList.remove("on");});
+  document.getElementById(id).classList.add("on");
+  document.querySelectorAll(".bn").forEach(function(b){b.classList.remove("on");});
+  document.getElementById("b"+n).classList.add("on");
+  var tb=document.getElementById("tbmain");
+  var sb=document.getElementById("sbar");
+  var isH=id==="ih";
+  if(tb)tb.style.display=isH?"flex":"none";
+  if(sb)sb.style.display=isH?"block":"none";
+  if(id==="ifo"){RF();}
+  if(id==="ic"){RC();}
+  if(id==="in"){RAN();}
+  if(id==="iw"){RW();}
+}
+function ST(btn,id){
+  var p=btn.closest(".itab");
+  p.querySelectorAll(".tab").forEach(function(t){t.classList.remove("on");});
+  btn.classList.add("on");
+  p.querySelectorAll(".stab").forEach(function(s){s.classList.remove("on");});
+  var el=document.getElementById(id);
+  if(el)el.classList.add("on");
+}
+function AC(btn){
+  btn.closest(".chips").querySelectorAll(".chip").forEach(function(c){c.classList.remove("on");});
+  btn.classList.add("on");
+}
+function AZ(btn,zone){
+  btn.closest(".chips").querySelectorAll(".chip").forEach(function(c){c.classList.remove("on");});
+  btn.classList.add("on");
+  var scope=btn.closest(".stab")||btn.closest(".itab");
+  scope.querySelectorAll(".zone-block").forEach(function(b){
+    b.style.display=(zone==="all"||b.dataset.zone===zone)?"":"none";
+  });
+}
+var LANGS = {
+  fr: {
+    welcome_title: "Bonjour !",
+    welcome_sub: "Veuillez vous inscrire ou vous connecter si vous avez deja un compte !",
+    btn_login: "Se connecter",
+    btn_register: "S enregistrer",
+    btn_guest: "Continuer sans compte",
+    legal: "En continuant, vous acceptez nos Conditions d utilisation et notre Politique de confidentialite",
+    login_title: "Se connecter",
+    login_sub: "Acces a toutes les fonctionnalites de ScoreCI.",
+    reg_title: "Creer un compte",
+    reg_sub: "Rejoignez la communaute ScoreCI.",
+    nav_home: "Accueil", nav_match: "Matchs", nav_rank: "Classe.", nav_team: "Equipes", nav_forum: "Forum", nav_ticket: "Billets", nav_world: "Monde",
+    live_label: "En direct", actu_label: "Actualites", next_label: "Prochains Matchs",
+    search_ph: "Rechercher un club, joueur..."
+  },
+  en: {
+    welcome_title: "Hello!",
+    welcome_sub: "Please sign up or log in if you already have an account!",
+    btn_login: "Log in",
+    btn_register: "Sign up",
+    btn_guest: "Continue without account",
+    legal: "By continuing, you agree to our Terms of Use and Privacy Policy",
+    login_title: "Log in",
+    login_sub: "Access all ScoreCI features.",
+    reg_title: "Create account",
+    reg_sub: "Join the ScoreCI community.",
+    nav_home: "Home", nav_match: "Matches", nav_rank: "Table", nav_team: "Teams", nav_forum: "Forum", nav_ticket: "Tickets", nav_world: "World",
+    live_label: "Live", actu_label: "News", next_label: "Upcoming Matches",
+    search_ph: "Search a club, player..."
+  }
+};
+var currentLang = "fr";
+function L(btn, lang) {
+  document.querySelectorAll(".lbtn").forEach(function(b){b.classList.remove("on");});
+  btn.classList.add("on");
+  currentLang = lang;
+  applyLang(lang);
+}
+function applyLang(lang) {
+  var t = LANGS[lang];
+  if (!t) return;
+  var els = {
+    "wtitle": t.welcome_title,
+    "wtext": t.welcome_sub,
+    "btn-login": t.btn_login,
+    "btn-register": t.btn_register,
+    "btn-guest": t.btn_guest,
+    "wlegal": t.legal,
+    "ltitle": t.login_title,
+    "lsub": t.login_sub,
+    "rtitle": t.reg_title,
+    "rsub": t.reg_sub,
+    "b0txt": t.nav_home,
+    "b1txt": t.nav_match,
+    "b2txt": t.nav_rank,
+    "b3txt": t.nav_team,
+    "b4txt": t.nav_forum,
+    "b5txt": t.nav_ticket,
+    "b6txt": t.nav_world,
+    "live-label": t.live_label,
+    "actu-label": t.actu_label,
+    "next-label": t.next_label
+  };
+  Object.keys(els).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = els[id];
+  });
+  var sinp = document.getElementById("sinp");
+  if (sinp) sinp.placeholder = t.search_ph;
+}
+function UC(){
+  var now=new Date();
+  var t=String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
+  ["clk","clk2"].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=t;});
+}
+UC();setInterval(UC,30000);
+function I(){UC();RN();RCL();RS();RC();}
+var lmv=67;
+setInterval(function(){
+  if(lmv<90)lmv++;
+  ["lm","lm2"].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=lmv+"'";});
+},15000);
+function mk(tag,cls,style,txt){
+  var el=document.createElement(tag);
+  if(cls)el.className=cls;
+  if(style)el.style.cssText=style;
+  if(txt!==undefined)el.textContent=txt;
+  return el;
+}
+function RN(){
+  var zh=document.getElementById("zh");
+  var zm=document.getElementById("zm");
+  if(zh){zh.innerHTML="";zh.appendChild(buildCard(NEWS[0],true));}
+  if(zm){zm.innerHTML="";NEWS.slice(1,4).forEach(function(a){zm.appendChild(buildCard(a,false));});}
+}
+function RAN(btn,zone){
+  if(btn){btn.closest(".chips").querySelectorAll(".chip").forEach(function(c){c.classList.remove("on");});btn.classList.add("on");}
+  if(!zone)zone="all";
+  var z=document.getElementById("zall");
+  if(!z)return;
+  z.innerHTML="";
+  var list=zone==="all"?NEWS:NEWS.filter(function(a){return a.zone===zone;});
+  list.forEach(function(a,i){z.appendChild(buildCard(a,i===0));});
+  z.appendChild(mk("div","","height:1rem;",""));
+}
+function buildCard(a,big){
+  var wrap=mk("div",big?"acard":"amini");
+  wrap.style.cursor="pointer";
+  wrap.addEventListener("click",function(){T("Ouverture article");});
+  if(big){
+    var imgDiv=mk("div","aimg","background:linear-gradient(135deg,"+a.bg+",#333);");
+    imgDiv.appendChild(mk("span","","font-size:3.2rem;",a.ic));
+    var badge=mk("div","abadge","",a.src);
+    imgDiv.appendChild(badge);
+    wrap.appendChild(imgDiv);
+    var body=mk("div","abody");
+    body.appendChild(mk("div","asrc","",a.src));
+    body.appendChild(mk("div","atitle","",a.title));
+    body.appendChild(mk("div","ameta","","Il y a "+a.d));
+    wrap.appendChild(body);
+  } else {
+    var ico=mk("div","aminiico","background:linear-gradient(135deg,"+a.bg+",#333);",a.ic);
+    wrap.appendChild(ico);
+    var mb=mk("div","aminib");
+    mb.appendChild(mk("div","aminisrc","",a.src));
+    mb.appendChild(mk("div","aminit","",a.title));
+    mb.appendChild(mk("div","aminid","","Il y a "+a.d));
+    wrap.appendChild(mb);
+  }
+  return wrap;
+}
+function PIco(p){if(p==="Gardien")return"🧤";if(p==="Defenseur")return"🛡️";if(p==="Milieu")return"⚡";return"⚽";}
+function RCL(){
+  var g=document.getElementById("cgrid");
+  if(!g)return;
+  g.innerHTML="";
+  CLUBS.forEach(function(c){
+    var card=mk("div","cc");
+    card.style.cursor="pointer";
+    card.addEventListener("click",(function(cid){return function(){OC(cid);};})(c.id));
+    var banner=mk("div","ccbanner","background:linear-gradient(135deg,"+c.color+",#eee);");
+    var badge=mk("div","ccbadge","",c.emoji);
+    banner.appendChild(badge);
+    card.appendChild(banner);
+    var body=mk("div","ccbody");
+    body.appendChild(mk("div","ccname","",c.name));
+    body.appendChild(mk("div","ccdiv","",c.div));
+    body.appendChild(mk("div","ccpts","",c.rang+"e - "+c.pts+" pts"));
+    card.appendChild(body);
+    g.appendChild(card);
+  });
+}
+function RS(){
+  var postes={gk:"Gardien",df:"Defenseur",mf:"Milieu",at:"Attaquant"};
+  Object.keys(postes).forEach(function(cls){
+    var z=document.getElementById("s"+cls);
+    if(!z)return;
+    z.innerHTML="";
+    JOUEURS.filter(function(j){return j.posClass===cls;}).forEach(function(j){
+      var row=mk("div","prow");
+      row.style.cursor="pointer";
+      row.addEventListener("click",(function(jn){return function(){OP(jn);};})(j.nom));
+      var av=mk("div","pav");
+      av.appendChild(mk("span","","font-size:1.05rem;",j.emoji));
+      var pn=mk("div","pnum","",String(j.num));
+      av.appendChild(pn);
+      row.appendChild(av);
+      var pi=mk("div","pi");
+      pi.appendChild(mk("div","pname","",j.nom));
+      pi.appendChild(mk("div","pclub","",j.club+" - "+j.pays));
+      row.appendChild(pi);
+      row.appendChild(mk("span","ppos "+cls,"",postes[cls].substring(0,3).toUpperCase()));
+      z.appendChild(row);
+    });
+  });
+}
+function OC(id){
+  var c=CLUBS.find(function(x){return x.id===id;});
+  if(!c)return;
+  var hdr=document.getElementById("cdhc");
+  var body=document.getElementById("cdbc");
+  if(!hdr||!body)return;
+  hdr.innerHTML="";
+  var hdrDiv=mk("div","cdhdr","background:linear-gradient(135deg,"+c.color+","+c.color+"cc);");
+  var bk=mk("button","cdbk","","← Retour");
+  bk.addEventListener("click",function(){document.getElementById("cdet").classList.remove("on");});
+  hdrDiv.appendChild(bk);
+  var top=mk("div","cdtop");
+  top.appendChild(mk("span","cdem","",c.emoji));
+  var info=mk("div");
+  info.appendChild(mk("div","cdname","",c.name));
+  var bdg=mk("span","cdbadge","",c.div+" - "+c.rang+"e");
+  info.appendChild(bdg);
+  top.appendChild(info);
+  hdrDiv.appendChild(top);
+  var sg=mk("div","cdsgrid");
+  [[c.pts,"Points"],[c.g,"Vict."],[c.bp,"Buts"],[c.bp-c.bc,"Diff."]].forEach(function(x){
+    var s=mk("div","cdstat");
+    s.appendChild(mk("div","n","",String(x[0])));
+    s.appendChild(mk("div","l","",x[1]));
+    sg.appendChild(s);
+  });
+  hdrDiv.appendChild(sg);
+  hdr.appendChild(hdrDiv);
+  body.innerHTML="";
+  body.appendChild(mk("div","cdsec","","Informations"));
+  [["Stade",c.stade],["Ville",c.ville],["Fonde",String(c.fonde)],["Entraineur",c.coach]].forEach(function(x){
+    var row=mk("div","cdinf");
+    row.appendChild(mk("span","cdil","",x[0]));
+    row.appendChild(mk("span","cdiv","",x[1]));
+    body.appendChild(row);
+  });
+  body.appendChild(mk("div","cdsec","","Effectif Cle"));
+  c.joueurs.forEach(function(j){
+    var row=mk("div","prow");
+    var av=mk("div","pav","background:linear-gradient(135deg,"+c.color+","+c.color+"88);");
+    av.appendChild(mk("span","","",PIco(j.poste)));
+    av.appendChild(mk("div","pnum","",String(j.num)));
+    row.appendChild(av);
+    var pi=mk("div","pi");
+    pi.appendChild(mk("div","pname","",j.nom));
+    pi.appendChild(mk("div","pclub","",j.poste+" - "+j.age+" ans"));
+    row.appendChild(pi);
+    row.appendChild(mk("span","pstat","",j.stat));
+    body.appendChild(row);
+  });
+  body.appendChild(mk("div","","height:1rem;",""));
+  document.getElementById("cdet").classList.add("on");
+}
+function OP(nom){
+  var j=JOUEURS.find(function(x){return x.nom===nom;});
+  if(!j)return;
+  var hdr=document.getElementById("pdhc");
+  var body=document.getElementById("pdbc");
+  if(!hdr||!body)return;
+  hdr.innerHTML="";
+  var hdrDiv=mk("div","pdhdr","background:linear-gradient(135deg,#007A34,#009A44);");
+  var bk=mk("button","pdbk","","← Retour");
+  bk.addEventListener("click",function(){document.getElementById("pdet").classList.remove("on");});
+  hdrDiv.appendChild(bk);
+  var top=mk("div","pdtop");
+  var av=mk("div","pdav","",j.emoji);
+  top.appendChild(av);
+  var info=mk("div");
+  info.appendChild(mk("div","pdname","",j.nom));
+  top.appendChild(info);
+  hdrDiv.appendChild(top);
+  hdr.appendChild(hdrDiv);
+  body.innerHTML="";
+  var sg=mk("div","pdsg");
+  [[j.caps,"Selections"],[j.buts,"Buts"],[j.age,"Age"]].forEach(function(x){
+    var s=mk("div","pdst");
+    s.appendChild(mk("div","n","",String(x[0])));
+    s.appendChild(mk("div","l","",x[1]));
+    sg.appendChild(s);
+  });
+  body.appendChild(sg);
+  [["Club",j.club],["Championnat",j.pays],["Maillot","#"+j.num]].forEach(function(x){
+    var row=mk("div","pdinf");
+    row.appendChild(mk("span","","font-size:.7rem;color:var(--m);",x[0]));
+    row.appendChild(mk("span","","font-size:.76rem;font-weight:700;color:var(--t);",x[1]));
+    body.appendChild(row);
+  });
+  body.appendChild(mk("div","","height:1rem;",""));
+  document.getElementById("pdet").classList.add("on");
+}
+function fetchLiveStandings(compId,cb){
+  if(!API_BASE){cb(null);return;}
+  fetch(API_BASE+"/api/standings/"+compId).then(function(r){
+    if(!r.ok)throw new Error("http "+r.status);
+    return r.json();
+  }).then(function(data){
+    if(!data||!data.teams||!data.teams.length){cb(null);return;}
+    var teams=data.teams.map(function(t){
+      return {emoji:t.emoji||"⚽",name:t.name,color:t.color||"#333",j:t.j,g:t.g,n:t.n,d:t.d,pts:t.pts};
+    });
+    cb({label:data.label,sub:"En direct - "+new Date(data.updatedAt).toLocaleTimeString(),teams:teams});
+  }).catch(function(){cb(null);});
+}
+function renderStandings(list,targetId,onRow){
+  var z=document.getElementById(targetId);
+  if(!z)return;
+  z.innerHTML="";
+  var s=list.slice().sort(function(a,b){return b.pts-a.pts;});
+  s.forEach(function(c,i){
+    var r=i+1;
+    var row=mk("div","crow"+(r<=3?" pr":r>=6?" rl":""));
+    row.style.cursor="pointer";
+    row.addEventListener("click",(function(cc){return function(){onRow(cc);};})(c));
+    var pos=mk("span","cpos","",String(r));
+    if(r<=3)pos.style.color="var(--v)";
+    if(r>=6)pos.style.color="#ef4444";
+    row.appendChild(pos);
+    var cid=mk("div","ccid");
+    var cl=mk("div","ccl","",c.emoji);
+    cid.appendChild(cl);
+    cid.appendChild(mk("span","ccn","",c.name));
+    row.appendChild(cid);
+    [c.j,c.g,c.n,c.d].forEach(function(v){row.appendChild(mk("span","cst","",String(v)));});
+    var pts=mk("span","cpts","",String(c.pts));
+    if(r>=6)pts.style.color="#ef4444";
+    row.appendChild(pts);
+    z.appendChild(row);
+  });
+}
+var currentScope="ci";
+function SWC(btn,scope){
+  if(btn){
+    btn.closest(".chips").querySelectorAll(".chip").forEach(function(c){c.classList.remove("on");});
+    btn.classList.add("on");
+  }
+  currentScope=scope;
+  var divchips=document.getElementById("divchips");
+  var legend=document.getElementById("clegend");
+  var title=document.getElementById("clastitle2");
+  var sub=document.getElementById("classub2");
+  if(scope==="ci"){
+    if(divchips)divchips.style.display="flex";
+    if(legend)legend.style.display="flex";
+    if(title)title.textContent="Classement";
+    if(sub)sub.textContent="MTN Ligue 1 - 2025/2026 - J28";
+    renderStandings(CLUBS,"clist",function(c){OC(c.id);});
+  } else {
+    if(divchips)divchips.style.display="none";
+    if(legend)legend.style.display="none";
+    var comp=STANDINGS[scope];
+    if(title)title.textContent=comp.label;
+    if(sub)sub.textContent=comp.sub;
+    renderStandings(comp.teams,"clist",function(c){T(c.name+" — "+c.pts+" pts");});
+    fetchLiveStandings(scope,function(live){
+      if(live && currentScope===scope){
+        if(title)title.textContent=live.label;
+        if(sub)sub.textContent=live.sub;
+        renderStandings(live.teams,"clist",function(c){T(c.name+" — "+c.pts+" pts");});
+      }
+    });
+  }
+}
+function RC(){SWC(null,currentScope);}
+function SWB(btn,scope){
+  btn.closest(".chips").querySelectorAll(".chip").forEach(function(c){c.classList.remove("on");});
+  btn.classList.add("on");
+  var title=document.getElementById("eb-title");
+  var list=document.getElementById("eb-list");
+  if(!title||!list)return;
+  if(scope==="l1"){
+    title.textContent="Buteurs - MTN Ligue 1";
+    list.innerHTML="";
+    [["Kone Ismael","ASEC Mimosas",18],["Traore Adama","Africa Sports",15],["Coulibaly Seydou","SOA",13],["Gbagbi Christ","San Pedro FC",11]].forEach(function(x,i){
+      list.appendChild(scorerRow(i+1,x[0],x[1],x[2]));
+    });
+  } else if(scope==="can"){
+    title.textContent="Buteurs - CAN 2025";
+    list.innerHTML="";
+    CAN_SCORERS.forEach(function(p,i){list.appendChild(scorerRow(i+1,p.nom,p.club,p.buts));});
+  } else {
+    title.textContent="Elephants meilleurs buteurs en club (Europe)";
+    list.innerHTML="";
+    JOUEURS.slice().sort(function(a,b){return b.buts-a.buts;}).filter(function(j){return j.buts>0;}).forEach(function(j,i){
+      list.appendChild(scorerRow(i+1,j.nom,j.club+" ("+j.pays+")",j.buts));
+    });
+  }
+}
+var currentWZone="afrique",currentWComp="can";
+function RW(){SWZ(null,currentWZone);}
+function SWZ(btn,zone){
+  if(btn){
+    btn.closest(".chips").querySelectorAll(".chip").forEach(function(c){c.classList.remove("on");});
+    btn.classList.add("on");
+  }
+  currentWZone=zone;
+  var cc=document.getElementById("wcompchips");
+  cc.innerHTML="";
+  var list=COMPS.filter(function(c){return c.zone===zone;});
+  list.forEach(function(c,i){
+    var b=mk("button","chip"+(i===0?" on":""),"",c.flag+" "+c.label);
+    b.addEventListener("click",(function(cid){return function(){SWCW(this,cid);};})(c.id));
+    cc.appendChild(b);
+  });
+  SWCW(cc.firstChild,list[0].id);
+}
+function SWCW(btn,compId){
+  if(btn){
+    btn.closest(".chips").querySelectorAll(".chip").forEach(function(c){c.classList.remove("on");});
+    btn.classList.add("on");
+  }
+  currentWComp=compId;
+  var comp=STANDINGS[compId];
+  document.getElementById("wctitle").textContent=comp.label;
+  document.getElementById("wcsub").textContent=comp.sub;
+  document.getElementById("wcomplabel").textContent=comp.label;
+  renderStandings(comp.teams,"wlist",function(c){T(c.name+" — "+c.pts+" pts");});
+  fetchLiveStandings(compId,function(live){
+    if(live && currentWComp===compId){
+      document.getElementById("wctitle").textContent=live.label;
+      document.getElementById("wcsub").textContent=live.sub;
+      renderStandings(live.teams,"wlist",function(c){T(c.name+" — "+c.pts+" pts");});
+    }
+  });
+  var wn=document.getElementById("wnews");
+  wn.innerHTML="";
+  var items=NEWS.filter(function(a){return a.comp===compId;});
+  if(!items.length)items=NEWS.filter(function(a){return a.zone===currentWZone;});
+  items.slice(0,4).forEach(function(a){wn.appendChild(buildCard(a,false));});
+}
+function scorerRow(rank,nom,club,buts){
+  var row=mk("div","prow");
+  row.style.cursor="pointer";
+  row.addEventListener("click",function(){T(buts+" buts");});
+  row.appendChild(mk("div","","font-size:1.05rem;font-weight:900;color:"+(rank===1?"#F77F00":"var(--m)")+";width:20px;text-align:center;flex-shrink:0;",String(rank)));
+  row.appendChild(mk("div","pav","","⚽"));
+  var pi=mk("div","pi");
+  pi.appendChild(mk("div","pname","",nom));
+  pi.appendChild(mk("div","pclub","",club));
+  row.appendChild(pi);
+  row.appendChild(mk("span","pstat","",String(buts)));
+  return row;
+}
+function RF(){
+  var t=document.getElementById("flist");
+  if(t){
+    t.innerHTML="";
+    FTOPICS.forEach(function(f){
+      var el=mk("div","ftopic");
+      el.style.cursor="pointer";
+      el.addEventListener("click",function(){T("Ouverture sujet");});
+      el.appendChild(mk("div","ftt","",f.title));
+      var meta=mk("div","ftm");
+      meta.appendChild(mk("span","fttag","",f.tag));
+      meta.appendChild(mk("span","","",f.replies+" rep."));
+      meta.appendChild(mk("span","","",f.views+" vues"));
+      meta.appendChild(mk("span","","",f.time));
+      el.appendChild(meta);
+      t.appendChild(el);
+    });
+  }
+  RC2();
+}
+function RC2(){
+  var z=document.getElementById("clist2");
+  if(!z)return;
+  z.innerHTML="";
+  comments.forEach(function(c){
+    var item=mk("div","citem");
+    var head=mk("div","cihead");
+    head.appendChild(mk("div","ciav","",c.av));
+    head.appendChild(mk("span","ciname","",c.user));
+    head.appendChild(mk("span","citime","",c.time));
+    item.appendChild(head);
+    item.appendChild(mk("div","citext","",c.text));
+    var lk=mk("div","cilikes","","❤ "+c.likes+" J aime");
+    lk.style.cursor="pointer";
+    lk.addEventListener("click",(function(cid){return function(){LK(cid);};})(c.id));
+    item.appendChild(lk);
+    z.appendChild(item);
+  });
+}
+function SC(){
+  var inp=document.getElementById("cinp");
+  if(!inp||!inp.value.trim())return;
+  var now=new Date();
+  comments.push({id:comments.length+1,user:"Vous",av:"V",text:inp.value.trim(),time:String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),likes:0});
+  inp.value="";
+  RC2();
+  T("Commentaire publie");
+}
+function LK(id){var c=comments.find(function(x){return x.id===id;});if(c){c.likes++;RC2();}}
+function DS(v){
+  var btn=document.getElementById("sclr");
+  if(btn)btn.style.display=v?"block":"none";
+  if(!v.trim()){HRS();return;}
+  var q=v.toLowerCase();
+  var res=[];
+  CLUBS.forEach(function(c){if(c.name.toLowerCase().indexOf(q)>=0)res.push({em:c.emoji,name:c.name,sub:c.div,k:"c",id:c.id});});
+  JOUEURS.forEach(function(j){if(j.nom.toLowerCase().indexOf(q)>=0)res.push({em:j.emoji,name:j.nom,sub:j.club,k:"p",nom:j.nom});});
+  var z=document.getElementById("sres");
+  if(!z)return;
+  z._r=res;
+  z.innerHTML="";
+  if(!res.length){var m=mk("div","","padding:.8rem 1rem;font-size:.76rem;color:var(--m);","Aucun resultat");z.appendChild(m);}
+  else{
+    res.slice(0,6).forEach(function(r,i){
+      var item=mk("div","sri");
+      item.appendChild(mk("span","","font-size:1.15rem;",r.em));
+      var info=mk("div");
+      info.appendChild(mk("div","","font-size:.8rem;font-weight:700;color:var(--t);",r.name));
+      info.appendChild(mk("div","","font-size:.6rem;color:var(--m);",r.sub));
+      item.appendChild(info);
+      item.addEventListener("click",(function(idx){return function(){SRK(idx);};})(i));
+      z.appendChild(item);
+    });
+  }
+  z.classList.add("on");
+}
+function SRK(i){var z=document.getElementById("sres");if(z._r&&z._r[i]){var r=z._r[i];if(r.k==="c")OC(r.id);else OP(r.nom);HRS();CS();}}
+function SRS(){var v=document.getElementById("sinp");if(v&&v.value)DS(v.value);}
+function HRS(){document.getElementById("sres").classList.remove("on");}
+function CS(){var inp=document.getElementById("sinp");if(inp)inp.value="";HRS();var btn=document.getElementById("sclr");if(btn)btn.style.display="none";}
+function WA(p){var tel="2250720675951";var msg=encodeURIComponent("Bonjour ScoreCI ! Je souhaite commander : "+p+". Merci de confirmer la disponibilite et le paiement.");window.open("https://wa.me/"+tel+"?text="+msg,"_blank");T("Ouverture WhatsApp...");}
+function T(msg){var el=document.getElementById("tst");el.textContent=msg;el.classList.add("on");clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove("on");},2000);}
+</script>
+</body>
+</html>
