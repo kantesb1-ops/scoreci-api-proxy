@@ -192,7 +192,7 @@ app.get("/api/standings/:comp", async (req, res) => {
     }));
 
     const payload = { comp: compId, label: name, season, groups: groupPayloads, updatedAt: new Date().toISOString() };
-    cacheSet(cacheKey, payload, 15 * 60 * 1000); // 15 min
+    cacheSet(cacheKey, payload, 8 * 60 * 1000); // 8 min
     res.json(payload);
   } catch (err) {
     console.error(err.message);
@@ -229,7 +229,7 @@ app.get("/api/fixtures/:comp", async (req, res) => {
     }));
 
     const payload = { comp: compId, scope, matches, updatedAt: new Date().toISOString() };
-    cacheSet(cacheKey, payload, 10 * 60 * 1000); // 10 min
+    cacheSet(cacheKey, payload, 5 * 60 * 1000); // 5 min
     res.json(payload);
   } catch (err) {
     console.error(err.message);
@@ -276,7 +276,7 @@ async function getLiveFixtures() {
     groups: Object.values(groups).sort((a, b) => leaguePriority(a.competition) - leaguePriority(b.competition) || b.matches.length - a.matches.length),
     updatedAt: new Date().toISOString()
   };
-  cacheSet(cacheKey, payload, 90 * 1000); // 90s : partage entre /api/live et la verification de buts
+  cacheSet(cacheKey, payload, 45 * 1000); // 45s : plan Pro, on peut se permettre plus de fraicheur
   return payload;
 }
 
@@ -434,7 +434,7 @@ async function checkLiveGoals() {
     console.error("checkLiveGoals:", err.message);
   }
 }
-setInterval(checkLiveGoals, 20 * 60 * 1000);
+setInterval(checkLiveGoals, 90 * 1000); // plan Pro (7500/jour) : detection de buts quasi temps reel
 
 app.listen(PORT, () => {
   console.log(`ScoreCI API proxy en ecoute sur le port ${PORT}`);
