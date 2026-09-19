@@ -147,31 +147,31 @@ app.get("/api/standings/:comp", async (req, res) => {
 
     const groups = response?.[0]?.league?.standings || [];
     // Une competition peut avoir plusieurs groupes/poules (CAN, qualifs...).
-    // On ne les fusionne plus (ca melangeait les classements) : on garde celui
-    // qui contient la Cote d'Ivoire si elle y participe, sinon le premier.
-    let selected = groups[0] || [];
-    if (groups.length > 1) {
-      const ciGroup = groups.find(g =>
-        g.some(row => /ivoire|ivory coast/i.test(row.team.name))
-      );
-      if (ciGroup) selected = ciGroup;
-    }
-    const groupLabel = selected[0]?.group || null;
+    // On renvoie TOUS les groupes (avec leur label), le front les affiche
+    // separement avec un en-tete par groupe plutot que de les fusionner
+    // (ce qui melangeait les classements) ou de n'en garder qu'un seul
+    // (ce qui cachait les autres poules).
+    const ciGroupIdx = groups.findIndex(g => g.some(row => /ivoire|ivory coast/i.test(row.team.name)));
+    const orderedGroups = ciGroupIdx > 0
+      ? [groups[ciGroupIdx], ...groups.slice(0, ciGroupIdx), ...groups.slice(ciGroupIdx + 1)]
+      : groups;
 
-    const teams = selected.map(row => ({
-      emoji: null,
-      logo: row.team.logo,
-      name: row.team.name,
-      color: null,
-      group: row.group || null,
-      j: row.all.played,
-      g: row.all.win,
-      n: row.all.draw,
-      d: row.all.lose,
-      pts: row.points
+    const groupPayloads = orderedGroups.map(g => ({
+      label: g[0]?.group || null,
+      teams: g.map(row => ({
+        emoji: null,
+        logo: row.team.logo,
+        name: row.team.name,
+        color: null,
+        j: row.all.played,
+        g: row.all.win,
+        n: row.all.draw,
+        d: row.all.lose,
+        pts: row.points
+      }))
     }));
 
-    const payload = { comp: compId, label: name, season, group: groupLabel, teams, updatedAt: new Date().toISOString() };
+    const payload = { comp: compId, label: name, season, groups: groupPayloads, updatedAt: new Date().toISOString() };
     cacheSet(cacheKey, payload, 15 * 60 * 1000); // 15 min
     res.json(payload);
   } catch (err) {
