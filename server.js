@@ -439,4 +439,3 @@ setInterval(checkLiveGoals, 20 * 1000); // plan Mega : detection de buts quasi i
 app.listen(PORT, () => {
   console.log(`ScoreCI API proxy en ecoute sur le port ${PORT}`);
 });
-});
