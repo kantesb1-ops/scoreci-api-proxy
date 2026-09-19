@@ -62,12 +62,32 @@ const COMPETITIONS = {
   can:         { search: "Africa Cup of Nations", country: null },
   cafcl:       { search: "CAF Champions League", country: null },
   qualifs:     { search: "World Cup - Qualification Africa", country: null },
+  ucl:         { search: "UEFA Champions League", country: null },
+  uel:         { search: "UEFA Europa League", country: null },
   l1fr:        { search: "Ligue 1", country: "France" },
   pl:          { search: "Premier League", country: "England" },
   liga:        { search: "La Liga", country: "Spain" },
   seriea:      { search: "Serie A", country: "Italy" },
-  bundesliga:  { search: "Bundesliga", country: "Germany" }
+  bundesliga:  { search: "Bundesliga", country: "Germany" },
+  eredivisie:  { search: "Eredivisie", country: "Netherlands" },
+  primeira:    { search: "Primeira Liga", country: "Portugal" },
+  superlig:    { search: "Super Lig", country: "Turkey" },
+  saudipl:     { search: "Pro League", country: "Saudi-Arabia" },
+  mls:         { search: "Major League Soccer", country: "USA" }
 };
+
+// Ordre d'affichage : grands championnats d'abord, le reste ensuite
+// (utilise pour trier les groupes de matchs en direct).
+const LEAGUE_PRIORITY = [
+  "World Cup - Qualification Africa", "Africa Cup of Nations", "CAF Champions League",
+  "UEFA Champions League", "UEFA Europa League",
+  "Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1",
+  "Primeira Liga", "Eredivisie", "Super Lig"
+];
+function leaguePriority(name) {
+  const idx = LEAGUE_PRIORITY.indexOf(name);
+  return idx === -1 ? 999 : idx;
+}
 
 // ---- Cache memoire simple (TTL) ----
 const cache = new Map();
@@ -251,7 +271,7 @@ app.get("/api/live", async (req, res) => {
     });
     const payload = {
       matches: flat,
-      groups: Object.values(groups).sort((a, b) => b.matches.length - a.matches.length),
+      groups: Object.values(groups).sort((a, b) => leaguePriority(a.competition) - leaguePriority(b.competition) || b.matches.length - a.matches.length),
       updatedAt: new Date().toISOString()
     };
     cacheSet(cacheKey, payload, 60 * 1000); // 60s : donnees live, cache court
@@ -265,9 +285,9 @@ app.get("/api/live", async (req, res) => {
 // GET /api/news?zone=ci|afrique|monde -> actualites football en temps reel
 // via Google News RSS (meme principe que le backend KSB Sport).
 const NEWS_QUERIES = {
-  ci: "football Cote d'Ivoire Ligue 1 Elephants",
-  afrique: "CAN 2025 OR \"CAF Champions League\" football Afrique",
-  monde: "football Coupe du monde 2026 OR Premier League OR Ligue 1 transferts"
+  ci: "football Cote d'Ivoire Ligue 1 Elephants ASEC Africa Sports",
+  afrique: "CAN 2025 OR \"CAF Champions League\" OR football Afrique transferts",
+  monde: "football Coupe du monde 2026 OR \"Champions League\" OR Premier League OR Liga OR Serie A transferts mercato"
 };
 app.get("/api/news", async (req, res) => {
   const zone = ["ci", "afrique", "monde"].includes(req.query.zone) ? req.query.zone : "ci";
@@ -279,14 +299,14 @@ app.get("/api/news", async (req, res) => {
     const q = encodeURIComponent(NEWS_QUERIES[zone]);
     const url = `https://news.google.com/rss/search?q=${q}&hl=fr&gl=CI&ceid=CI:fr`;
     const feed = await rssParser.parseURL(url);
-    const items = (feed.items || []).slice(0, 12).map(it => ({
+    const items = (feed.items || []).slice(0, 15).map(it => ({
       title: it.title,
       link: it.link,
       date: it.isoDate || it.pubDate,
       source: (it.title && it.title.includes(" - ")) ? it.title.split(" - ").pop() : (it.creator || "Google News")
     }));
     const payload = { zone, items, updatedAt: new Date().toISOString() };
-    cacheSet(cacheKey, payload, 20 * 60 * 1000); // 20 min
+    cacheSet(cacheKey, payload, 12 * 60 * 1000); // 12 min : plus a jour
     res.json(payload);
   } catch (err) {
     console.error("news:", err.message);
