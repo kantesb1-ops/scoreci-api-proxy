@@ -101,7 +101,40 @@ function cacheSet(key, value, ttlMs) {
   cache.set(key, { value, expires: Date.now() + ttlMs });
 }
 
+// ---- Suivi du quota API-FOOTBALL (compteur local + coupe-circuit) ----
+// Le tableau de bord API-FOOTBALL a montre des pics proches de 150 000/jour
+// (le plafond du plan Mega). Ce compteur local nous permet de reagir AVANT
+// d'epuiser le quota, plutot que de le decouvrir apres coup.
+const DAILY_LIMIT = 150000;
+const SAFETY_THRESHOLD = 0.85; // 85% : on coupe les taches de fond, on garde l'essentiel
+let requestCount = 0;
+let countResetAt = nextUtcMidnight();
+const requestsByEndpoint = {};
+
+function nextUtcMidnight() {
+  const d = new Date();
+  d.setUTCHours(24, 0, 0, 0);
+  return d;
+}
+function trackRequest(path) {
+  if (Date.now() > countResetAt.getTime()) {
+    requestCount = 0;
+    for (const k in requestsByEndpoint) delete requestsByEndpoint[k];
+    countResetAt = nextUtcMidnight();
+  }
+  requestCount++;
+  const endpoint = path.split("?")[0];
+  requestsByEndpoint[endpoint] = (requestsByEndpoint[endpoint] || 0) + 1;
+  if (requestCount === Math.floor(DAILY_LIMIT * SAFETY_THRESHOLD)) {
+    console.warn(`ATTENTION : ${requestCount} requetes API-FOOTBALL aujourd'hui (seuil de securite ${SAFETY_THRESHOLD * 100}% atteint). Detection de buts en pause jusqu'a minuit UTC.`);
+  }
+}
+function quotaSafetyOk() {
+  return requestCount < DAILY_LIMIT * SAFETY_THRESHOLD;
+}
+
 async function apiGet(path) {
+  trackRequest(path);
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { "x-apisports-key": API_KEY }
   });
@@ -241,6 +274,23 @@ app.get("/api/fixtures/:comp", async (req, res) => {
 });
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+// GET /api/quota-status -> suivi du quota API-FOOTBALL, sans passer par leur site
+app.get("/api/quota-status", (req, res) => {
+  if (Date.now() > countResetAt.getTime()) {
+    requestCount = 0;
+    for (const k in requestsByEndpoint) delete requestsByEndpoint[k];
+    countResetAt = nextUtcMidnight();
+  }
+  res.json({
+    used: requestCount,
+    limit: DAILY_LIMIT,
+    percent: Math.round((requestCount / DAILY_LIMIT) * 1000) / 10,
+    safetyOk: quotaSafetyOk(),
+    resetsAt: countResetAt.toISOString(),
+    byEndpoint: requestsByEndpoint
+  });
+});
 
 // GET /api/live -> tous les matchs en direct, regroupes par championnat
 // Fonction partagee : recupere les matchs en direct, regroupes par championnat.
@@ -657,6 +707,7 @@ app.post("/api/notify", async (req, res) => {
 const lastScores = new Map(); // fixtureId -> "home-away"
 async function checkLiveGoals() {
   if (!messaging || !subscribedTokens.size) return;
+  if (!quotaSafetyOk()) return; // coupe-circuit : on protege le quota du jour
   try {
     const data = await getLiveFixtures();
     (data.matches || []).forEach(f => {
@@ -674,6 +725,11 @@ async function checkLiveGoals() {
     console.error("checkLiveGoals:", err.message);
   }
 }
+setInterval(checkLiveGoals, 20 * 1000); // plan Mega : detection de buts quasi instantanee
+
+app.listen(PORT, () => {
+  console.log(`ScoreCI API proxy en ecoute sur le port ${PORT}`);
+});
 setInterval(checkLiveGoals, 20 * 1000); // plan Mega : detection de buts quasi instantanee
 
 app.listen(PORT, () => {
