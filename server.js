@@ -29,13 +29,15 @@ if (!API_KEY) {
 // normalement, seules les routes /api/subscribe et l'envoi de notifs sont
 // desactivees.
 let messaging = null;
+let db = null;
 if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
   try {
     const json = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_B64, "base64").toString("utf8");
     const serviceAccount = JSON.parse(json);
     admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
     messaging = admin.messaging();
-    console.log("Firebase Admin initialise : notifications push activees.");
+    db = admin.firestore();
+    console.log("Firebase Admin initialise : notifications push activees, Firestore connecte.");
   } catch (err) {
     console.error("Impossible d'initialiser Firebase Admin :", err.message);
   }
@@ -43,9 +45,22 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
   console.log("FIREBASE_SERVICE_ACCOUNT_B64 absente : notifications push desactivees.");
 }
 
-// Jetons des appareils abonnes (en memoire ; repart a zero si le serveur
-// redemarre - suffisant pour demarrer, a migrer vers une vraie base plus tard).
+// Jetons des appareils abonnes. Garde en memoire pour la vitesse, mais
+// sauvegarde dans Firestore : ne disparait plus quand le serveur redemarre
+// (ce qui arrivait silencieusement avant - les utilisateurs perdaient leurs
+// notifications sans le savoir).
 const subscribedTokens = new Set();
+async function loadTokensFromFirestore() {
+  if (!db) return;
+  try {
+    const snap = await db.collection("push_tokens").get();
+    snap.forEach(doc => subscribedTokens.add(doc.id));
+    console.log(`${subscribedTokens.size} jeton(s) de notification recharges depuis Firestore.`);
+  } catch (err) {
+    console.error("Chargement des jetons Firestore echoue :", err.message);
+  }
+}
+loadTokensFromFirestore();
 
 const app = express();
 app.use(cors({
@@ -661,10 +676,14 @@ app.get("/api/standings/by-id/:leagueId", async (req, res) => {
   }
 });
 
-app.post("/api/subscribe", (req, res) => {
+app.post("/api/subscribe", async (req, res) => {
   const { token } = req.body || {};
   if (!token) return res.status(400).json({ error: "token manquant" });
   subscribedTokens.add(token);
+  if (db) {
+    db.collection("push_tokens").doc(token).set({ subscribedAt: new Date().toISOString() })
+      .catch(err => console.error("Sauvegarde jeton Firestore echouee :", err.message));
+  }
   res.json({ ok: true, total: subscribedTokens.size });
 });
 
@@ -679,9 +698,12 @@ async function sendNotification(title, body) {
     notification: { title, body },
     webpush: { fcmOptions: { link: "/" } }
   });
-  // Nettoie les jetons invalides/expires
+  // Nettoie les jetons invalides/expires (en memoire ET dans Firestore)
   res.responses.forEach((r, i) => {
-    if (!r.success) subscribedTokens.delete(tokens[i]);
+    if (!r.success) {
+      subscribedTokens.delete(tokens[i]);
+      if (db) db.collection("push_tokens").doc(tokens[i]).delete().catch(() => {});
+    }
   });
   return { sent: res.successCount };
 }
@@ -725,11 +747,6 @@ async function checkLiveGoals() {
     console.error("checkLiveGoals:", err.message);
   }
 }
-setInterval(checkLiveGoals, 20 * 1000); // plan Mega : detection de buts quasi instantanee
-
-app.listen(PORT, () => {
-  console.log(`ScoreCI API proxy en ecoute sur le port ${PORT}`);
-});
 setInterval(checkLiveGoals, 20 * 1000); // plan Mega : detection de buts quasi instantanee
 
 app.listen(PORT, () => {
