@@ -187,7 +187,8 @@ app.get("/api/standings/:comp", async (req, res) => {
         g: row.all.win,
         n: row.all.draw,
         d: row.all.lose,
-        pts: row.points
+        pts: row.points,
+        zone: row.description || null // ex: "Promotion - Champions League", "Relegation"
       }))
     }));
 
@@ -335,9 +336,22 @@ app.get("/api/fixture/:id", async (req, res) => {
   if (cached) return res.json(cached);
 
   try {
-    const response = await apiGet(`/fixtures?id=${id}`);
+    const [response, playersResponse] = await Promise.all([
+      apiGet(`/fixtures?id=${id}`),
+      apiGet(`/fixtures/players?fixture=${id}`).catch(() => [])
+    ]);
     const f = response && response[0];
     if (!f) return res.status(404).json({ error: "Match introuvable" });
+
+    // Note de performance par joueur (comme les badges colores type Sofascore)
+    const ratings = {};
+    (playersResponse || []).forEach(teamBlock => {
+      (teamBlock.players || []).forEach(p => {
+        const stat = p.statistics && p.statistics[0];
+        const r = stat && stat.games && stat.games.rating;
+        if (r) ratings[p.player.id] = parseFloat(r);
+      });
+    });
 
     const events = (f.events || []).map(e => ({
       minute: e.time.elapsed + (e.time.extra ? "+" + e.time.extra : ""),
@@ -357,10 +371,12 @@ app.get("/api/fixture/:id", async (req, res) => {
       startXI: (l.startXI || []).map(p => ({
         id: p.player.id, name: p.player.name, number: p.player.number,
         pos: p.player.pos, grid: p.player.grid,
+        rating: ratings[p.player.id] || null,
         photo: `https://media.api-sports.io/football/players/${p.player.id}.png`
       })),
       substitutes: (l.substitutes || []).map(p => ({
-        id: p.player.id, name: p.player.name, number: p.player.number, pos: p.player.pos
+        id: p.player.id, name: p.player.name, number: p.player.number, pos: p.player.pos,
+        rating: ratings[p.player.id] || null
       }))
     }));
 
