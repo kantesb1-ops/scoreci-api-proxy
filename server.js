@@ -220,7 +220,9 @@ app.get("/api/fixtures/:comp", async (req, res) => {
       date: f.fixture.date,
       status: f.fixture.status.short,
       home: f.teams.home.name,
+      homeId: f.teams.home.id,
       away: f.teams.away.name,
+      awayId: f.teams.away.id,
       homeLogo: f.teams.home.logo,
       awayLogo: f.teams.away.logo,
       homeScore: f.goals.home,
@@ -256,7 +258,9 @@ async function getLiveFixtures() {
     status: f.fixture.status.short,
     elapsed: f.fixture.status.elapsed,
     home: f.teams.home.name,
+    homeId: f.teams.home.id,
     away: f.teams.away.name,
+    awayId: f.teams.away.id,
     homeLogo: f.teams.home.logo,
     awayLogo: f.teams.away.logo,
     homeScore: f.goals.home,
@@ -344,6 +348,28 @@ app.get("/api/fixture/:id", async (req, res) => {
       assist: e.assist ? e.assist.name : null
     }));
 
+    // Compositions (si disponibles pour ce match)
+    const lineups = (f.lineups || []).map(l => ({
+      team: l.team.name,
+      teamLogo: l.team.logo,
+      formation: l.formation,
+      coach: l.coach ? l.coach.name : null,
+      startXI: (l.startXI || []).map(p => ({
+        id: p.player.id, name: p.player.name, number: p.player.number,
+        pos: p.player.pos, grid: p.player.grid,
+        photo: `https://media.api-sports.io/football/players/${p.player.id}.png`
+      })),
+      substitutes: (l.substitutes || []).map(p => ({
+        id: p.player.id, name: p.player.name, number: p.player.number, pos: p.player.pos
+      }))
+    }));
+
+    // Statistiques (possession, tirs, corners...)
+    const statistics = (f.statistics || []).map(s => ({
+      team: s.team.name,
+      stats: (s.statistics || []).map(st => ({ type: st.type, value: st.value }))
+    }));
+
     const payload = {
       id: f.fixture.id,
       date: f.fixture.date,
@@ -353,6 +379,8 @@ app.get("/api/fixture/:id", async (req, res) => {
       referee: f.fixture.referee || null,
       home: f.teams.home.name,
       away: f.teams.away.name,
+      homeId: f.teams.home.id,
+      awayId: f.teams.away.id,
       homeLogo: f.teams.home.logo,
       awayLogo: f.teams.away.logo,
       homeScore: f.goals.home,
@@ -361,6 +389,8 @@ app.get("/api/fixture/:id", async (req, res) => {
       country: f.league.country,
       round: f.league.round,
       events,
+      lineups,
+      statistics,
       updatedAt: new Date().toISOString()
     };
     cacheSet(cacheKey, payload, 15 * 1000); // 15s : peut evoluer si le match est en cours
@@ -368,6 +398,135 @@ app.get("/api/fixture/:id", async (req, res) => {
   } catch (err) {
     console.error("fixture detail:", err.message);
     res.status(502).json({ error: "Impossible de recuperer le detail du match", detail: err.message });
+  }
+});
+
+// GET /api/h2h?team1=ID&team2=ID -> historique des confrontations
+app.get("/api/h2h", async (req, res) => {
+  const { team1, team2 } = req.query;
+  if (!team1 || !team2) return res.status(400).json({ error: "team1 et team2 requis" });
+  const cacheKey = `h2h:${team1}-${team2}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return res.json(cached);
+
+  try {
+    const response = await apiGet(`/fixtures/headtohead?h2h=${team1}-${team2}&last=5`);
+    const matches = (response || []).map(f => ({
+      date: f.fixture.date,
+      home: f.teams.home.name,
+      away: f.teams.away.name,
+      homeScore: f.goals.home,
+      awayScore: f.goals.away,
+      comp: f.league.name
+    }));
+    const payload = { matches, updatedAt: new Date().toISOString() };
+    cacheSet(cacheKey, payload, 60 * 60 * 1000); // 1h : l'historique bouge peu
+    res.json(payload);
+  } catch (err) {
+    console.error("h2h:", err.message);
+    res.status(502).json({ error: "Impossible de recuperer le face-a-face", detail: err.message });
+  }
+});
+
+// GET /api/team/:id -> fiche club (infos, stade, effectif)
+app.get("/api/team/:id", async (req, res) => {
+  const id = req.params.id;
+  const cacheKey = `team:${id}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return res.json(cached);
+
+  try {
+    const [teamRes, squadRes] = await Promise.all([
+      apiGet(`/teams?id=${id}`),
+      apiGet(`/players/squads?team=${id}`)
+    ]);
+    const t = teamRes && teamRes[0];
+    if (!t) return res.status(404).json({ error: "Club introuvable" });
+    const squad = (squadRes && squadRes[0] && squadRes[0].players || []).map(p => ({
+      id: p.id, name: p.name, age: p.age, number: p.number, position: p.position, photo: p.photo
+    }));
+    const payload = {
+      id: t.team.id,
+      name: t.team.name,
+      logo: t.team.logo,
+      country: t.team.country,
+      founded: t.team.founded,
+      venue: t.venue ? { name: t.venue.name, city: t.venue.city, capacity: t.venue.capacity, image: t.venue.image } : null,
+      squad,
+      updatedAt: new Date().toISOString()
+    };
+    cacheSet(cacheKey, payload, 24 * 60 * 60 * 1000); // 24h : infos club stables
+    res.json(payload);
+  } catch (err) {
+    console.error("team detail:", err.message);
+    res.status(502).json({ error: "Impossible de recuperer le club", detail: err.message });
+  }
+});
+
+// GET /api/player/:id -> fiche joueur (profil + stats saison)
+app.get("/api/player/:id", async (req, res) => {
+  const id = req.params.id;
+  const cacheKey = `player:${id}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return res.json(cached);
+
+  try {
+    const season = new Date().getFullYear();
+    const response = await apiGet(`/players?id=${id}&season=${season}`);
+    const p = response && response[0];
+    if (!p) return res.status(404).json({ error: "Joueur introuvable" });
+    const st = (p.statistics && p.statistics[0]) || {};
+    const payload = {
+      id: p.player.id,
+      name: p.player.name,
+      photo: p.player.photo,
+      age: p.player.age,
+      nationality: p.player.nationality,
+      height: p.player.height,
+      weight: p.player.weight,
+      team: st.team ? st.team.name : null,
+      teamLogo: st.team ? st.team.logo : null,
+      position: st.games ? st.games.position : null,
+      appearances: st.games ? st.games.appearences : null,
+      goals: st.goals ? st.goals.total : null,
+      assists: st.goals ? st.goals.assists : null,
+      yellowCards: st.cards ? st.cards.yellow : null,
+      redCards: st.cards ? st.cards.red : null,
+      updatedAt: new Date().toISOString()
+    };
+    cacheSet(cacheKey, payload, 6 * 60 * 60 * 1000); // 6h
+    res.json(payload);
+  } catch (err) {
+    console.error("player detail:", err.message);
+    res.status(502).json({ error: "Impossible de recuperer le joueur", detail: err.message });
+  }
+});
+
+// GET /api/search?q=... -> recherche reelle clubs + joueurs
+app.get("/api/search", async (req, res) => {
+  const q = (req.query.q || "").trim();
+  if (q.length < 3) return res.json({ teams: [], players: [] });
+  const cacheKey = `search:${q.toLowerCase()}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return res.json(cached);
+
+  try {
+    const [teamsRes, playersRes] = await Promise.all([
+      apiGet(`/teams?search=${encodeURIComponent(q)}`).catch(() => []),
+      apiGet(`/players/profiles?search=${encodeURIComponent(q)}`).catch(() => [])
+    ]);
+    const teams = (teamsRes || []).slice(0, 8).map(t => ({
+      id: t.team.id, name: t.team.name, logo: t.team.logo, country: t.team.country
+    }));
+    const players = (playersRes || []).slice(0, 8).map(p => ({
+      id: p.player.id, name: p.player.name, photo: p.player.photo, nationality: p.player.nationality
+    }));
+    const payload = { teams, players };
+    cacheSet(cacheKey, payload, 30 * 60 * 1000); // 30 min
+    res.json(payload);
+  } catch (err) {
+    console.error("search:", err.message);
+    res.status(502).json({ error: "Recherche indisponible", detail: err.message });
   }
 });
 
