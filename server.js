@@ -279,21 +279,29 @@ app.post("/api/notify", async (req, res) => {
 // ---- Detection automatique de buts sur les matchs en direct ----
 // Toutes les 60s, compare les scores en direct au dernier releve connu et
 // notifie les abonnes si un score a change.
-const lastScores = new Map(); // fixtureId -> "hom
-{
-  "name": "scoreci-api-proxy",
-  "version": "1.0.0",
-  "description": "Proxy securise pour API-FOOTBALL (garde la cle API cote serveur) - alimente les sections Afrique & Monde de ScoreCI",
-  "main": "server.js",
-  "type": "commonjs",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "node-fetch": "^2.7.0",
-    "firebase-admin": "^12.6.0"
+const lastScores = new Map(); // fixtureId -> "home-away"
+async function checkLiveGoals() {
+  if (!messaging || !subscribedTokens.size) return;
+  try {
+    const response = await apiGet(`/fixtures?live=all`);
+    (response || []).forEach(f => {
+      const id = f.fixture.id;
+      const score = `${f.goals.home ?? 0}-${f.goals.away ?? 0}`;
+      const prev = lastScores.get(id);
+      if (prev && prev !== score) {
+        sendNotification(
+          "⚽ But !",
+          `${f.teams.home.name} ${score} ${f.teams.away.name} (${f.league.name})`
+        ).catch(e => console.error("Notif echouee:", e.message));
+      }
+      lastScores.set(id, score);
+    });
+  } catch (err) {
+    console.error("checkLiveGoals:", err.message);
   }
 }
+setInterval(checkLiveGoals, 60 * 1000);
+
+app.listen(PORT, () => {
+  console.log(`ScoreCI API proxy en ecoute sur le port ${PORT}`);
+});
