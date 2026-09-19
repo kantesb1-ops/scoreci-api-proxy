@@ -196,6 +196,7 @@ app.get("/api/fixtures/:comp", async (req, res) => {
     const response = await apiGet(`/fixtures?league=${leagueId}&season=${season}&${param}=8`);
 
     const matches = response.map(f => ({
+      id: f.fixture.id,
       date: f.fixture.date,
       status: f.fixture.status.short,
       home: f.teams.home.name,
@@ -227,6 +228,7 @@ app.get("/api/live", async (req, res) => {
   try {
     const response = await apiGet(`/fixtures?live=all`);
     const flat = (response || []).slice(0, 60).map(f => ({
+      id: f.fixture.id,
       date: f.fixture.date,
       status: f.fixture.status.short,
       elapsed: f.fixture.status.elapsed,
@@ -293,6 +295,54 @@ app.get("/api/news", async (req, res) => {
 });
 
 // POST /api/subscribe { token } -> enregistre un appareil pour les notifications
+// GET /api/fixture/:id -> detail complet d'un match (evenements, stade, arbitre)
+app.get("/api/fixture/:id", async (req, res) => {
+  const id = req.params.id;
+  const cacheKey = `fixture:${id}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return res.json(cached);
+
+  try {
+    const response = await apiGet(`/fixtures?id=${id}`);
+    const f = response && response[0];
+    if (!f) return res.status(404).json({ error: "Match introuvable" });
+
+    const events = (f.events || []).map(e => ({
+      minute: e.time.elapsed + (e.time.extra ? "+" + e.time.extra : ""),
+      type: e.type,          // "Goal", "Card", "subst"...
+      detail: e.detail,      // "Normal Goal", "Yellow Card"...
+      team: e.team.name,
+      player: e.player.name,
+      assist: e.assist ? e.assist.name : null
+    }));
+
+    const payload = {
+      id: f.fixture.id,
+      date: f.fixture.date,
+      status: f.fixture.status.short,
+      elapsed: f.fixture.status.elapsed,
+      venue: f.fixture.venue ? f.fixture.venue.name : null,
+      referee: f.fixture.referee || null,
+      home: f.teams.home.name,
+      away: f.teams.away.name,
+      homeLogo: f.teams.home.logo,
+      awayLogo: f.teams.away.logo,
+      homeScore: f.goals.home,
+      awayScore: f.goals.away,
+      comp: f.league.name,
+      country: f.league.country,
+      round: f.league.round,
+      events,
+      updatedAt: new Date().toISOString()
+    };
+    cacheSet(cacheKey, payload, 30 * 1000); // 30s : peut evoluer si le match est en cours
+    res.json(payload);
+  } catch (err) {
+    console.error("fixture detail:", err.message);
+    res.status(502).json({ error: "Impossible de recuperer le detail du match", detail: err.message });
+  }
+});
+
 app.post("/api/subscribe", (req, res) => {
   const { token } = req.body || {};
   if (!token) return res.status(400).json({ error: "token manquant" });
