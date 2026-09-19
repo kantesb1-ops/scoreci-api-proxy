@@ -546,6 +546,71 @@ app.get("/api/search", async (req, res) => {
   }
 });
 
+// GET /api/leagues/search?q=... -> parcourir N'IMPORTE QUEL championnat au monde
+// (pas seulement les 15 pre-configures), regroupes par pays comme sur Sofascore.
+app.get("/api/leagues/search", async (req, res) => {
+  const q = (req.query.q || "").trim();
+  const cacheKey = `leaguesearch:${q.toLowerCase()}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return res.json(cached);
+
+  try {
+    const path = q.length >= 2 ? `/leagues?search=${encodeURIComponent(q)}` : `/leagues?current=true`;
+    const response = await apiGet(path);
+    const grouped = {};
+    (response || []).slice(0, 200).forEach(item => {
+      const currentSeason = (item.seasons || []).find(s => s.current);
+      if (!currentSeason) return; // ignore les saisons terminees/futures
+      const country = item.country ? item.country.name : "International";
+      if (!grouped[country]) grouped[country] = { country, flag: item.country ? item.country.flag : null, leagues: [] };
+      grouped[country].leagues.push({
+        id: item.league.id,
+        name: item.league.name,
+        logo: item.league.logo,
+        type: item.league.type,
+        season: currentSeason.year
+      });
+    });
+    const countries = Object.values(grouped).sort((a, b) => a.country.localeCompare(b.country));
+    const payload = { countries };
+    cacheSet(cacheKey, payload, 6 * 60 * 60 * 1000); // 6h
+    res.json(payload);
+  } catch (err) {
+    console.error("leagues search:", err.message);
+    res.status(502).json({ error: "Recherche de championnats indisponible", detail: err.message });
+  }
+});
+
+// GET /api/standings/by-id/:leagueId?season=YYYY -> classement de N'IMPORTE
+// QUEL championnat par son id (pour la navigation libre ci-dessus).
+app.get("/api/standings/by-id/:leagueId", async (req, res) => {
+  const leagueId = req.params.leagueId;
+  const season = req.query.season || new Date().getFullYear();
+  const cacheKey = `standings-id:${leagueId}:${season}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return res.json(cached);
+
+  try {
+    const response = await apiGet(`/standings?league=${leagueId}&season=${season}`);
+    const leagueName = response?.[0]?.league?.name || "Championnat";
+    const groups = response?.[0]?.league?.standings || [];
+    const groupPayloads = groups.map(g => ({
+      label: g[0]?.group || null,
+      teams: g.map(row => ({
+        emoji: null, logo: row.team.logo, name: row.team.name, color: null,
+        j: row.all.played, g: row.all.win, n: row.all.draw, d: row.all.lose,
+        pts: row.points, zone: row.description || null
+      }))
+    }));
+    const payload = { label: leagueName, season, groups: groupPayloads, updatedAt: new Date().toISOString() };
+    cacheSet(cacheKey, payload, 10 * 60 * 1000); // 10 min
+    res.json(payload);
+  } catch (err) {
+    console.error("standings by id:", err.message);
+    res.status(502).json({ error: "Impossible de recuperer ce classement", detail: err.message });
+  }
+});
+
 app.post("/api/subscribe", (req, res) => {
   const { token } = req.body || {};
   if (!token) return res.status(400).json({ error: "token manquant" });
