@@ -192,7 +192,7 @@ app.get("/api/standings/:comp", async (req, res) => {
     }));
 
     const payload = { comp: compId, label: name, season, groups: groupPayloads, updatedAt: new Date().toISOString() };
-    cacheSet(cacheKey, payload, 8 * 60 * 1000); // 8 min
+    cacheSet(cacheKey, payload, 3 * 60 * 1000); // 3 min (plan Mega : tres large quota)
     res.json(payload);
   } catch (err) {
     console.error(err.message);
@@ -229,7 +229,7 @@ app.get("/api/fixtures/:comp", async (req, res) => {
     }));
 
     const payload = { comp: compId, scope, matches, updatedAt: new Date().toISOString() };
-    cacheSet(cacheKey, payload, 5 * 60 * 1000); // 5 min
+    cacheSet(cacheKey, payload, 2 * 60 * 1000); // 2 min
     res.json(payload);
   } catch (err) {
     console.error(err.message);
@@ -276,7 +276,7 @@ async function getLiveFixtures() {
     groups: Object.values(groups).sort((a, b) => leaguePriority(a.competition) - leaguePriority(b.competition) || b.matches.length - a.matches.length),
     updatedAt: new Date().toISOString()
   };
-  cacheSet(cacheKey, payload, 45 * 1000); // 45s : plan Pro, on peut se permettre plus de fraicheur
+  cacheSet(cacheKey, payload, 15 * 1000); // 15s : quasi temps reel (plan Mega)
   return payload;
 }
 
@@ -314,7 +314,7 @@ app.get("/api/news", async (req, res) => {
       source: (it.title && it.title.includes(" - ")) ? it.title.split(" - ").pop() : (it.creator || "Google News")
     }));
     const payload = { zone, items, updatedAt: new Date().toISOString() };
-    cacheSet(cacheKey, payload, 12 * 60 * 1000); // 12 min : plus a jour
+    cacheSet(cacheKey, payload, 8 * 60 * 1000); // 8 min : plus a jour
     res.json(payload);
   } catch (err) {
     console.error("news:", err.message);
@@ -363,7 +363,7 @@ app.get("/api/fixture/:id", async (req, res) => {
       events,
       updatedAt: new Date().toISOString()
     };
-    cacheSet(cacheKey, payload, 30 * 1000); // 30s : peut evoluer si le match est en cours
+    cacheSet(cacheKey, payload, 15 * 1000); // 15s : peut evoluer si le match est en cours
     res.json(payload);
   } catch (err) {
     console.error("fixture detail:", err.message);
@@ -434,8 +434,9 @@ async function checkLiveGoals() {
     console.error("checkLiveGoals:", err.message);
   }
 }
-setInterval(checkLiveGoals, 90 * 1000); // plan Pro (7500/jour) : detection de buts quasi temps reel
+setInterval(checkLiveGoals, 20 * 1000); // plan Mega : detection de buts quasi instantanee
 
 app.listen(PORT, () => {
   console.log(`ScoreCI API proxy en ecoute sur le port ${PORT}`);
+});
 });
