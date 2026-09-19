@@ -11,6 +11,8 @@ const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
 const admin = require("firebase-admin");
+const RSSParser = require("rss-parser");
+const rssParser = new RSSParser();
 
 const API_KEY = process.env.API_FOOTBALL_KEY;
 const PORT = process.env.PORT || 3001;
@@ -56,6 +58,7 @@ app.use(express.json());
 // competition (on ne code pas les id en dur : on les resout une fois via
 // /leagues puis on les met en cache, pour eviter toute erreur de mapping).
 const COMPETITIONS = {
+  ligue1ci:    { search: "Ligue 1", country: "Ivory Coast" },
   can:         { search: "Africa Cup of Nations", country: null },
   cafcl:       { search: "CAF Champions League", country: null },
   qualifs:     { search: "World Cup - Qualification Africa", country: null },
@@ -106,11 +109,18 @@ async function resolveLeague(compId) {
   if (!results || !results.length) {
     throw new Error(`Aucune ligue trouvee pour "${cfg.search}"`);
   }
-  // Si un pays est precise, on filtre dessus ; sinon on prend le 1er resultat
-  // dont un "seasons" est marque current:true.
-  let match = cfg.country
-    ? results.find(r => r.country && r.country.name === cfg.country) || results[0]
-    : results[0];
+  // Si un pays est precise, on exige une correspondance exacte (sinon on
+  // risquerait de resoudre "Ligue 1" vers la France au lieu de la CI, par
+  // exemple) ; sinon on prend le 1er resultat.
+  let match;
+  if (cfg.country) {
+    match = results.find(r => r.country && r.country.name === cfg.country);
+    if (!match) {
+      throw new Error(`Ligue "${cfg.search}" introuvable pour le pays "${cfg.country}"`);
+    }
+  } else {
+    match = results[0];
+  }
 
   const currentSeason = (match.seasons || []).find(s => s.current) || (match.seasons || []).slice(-1)[0];
   const info = {
@@ -208,7 +218,7 @@ app.get("/api/fixtures/:comp", async (req, res) => {
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
-// GET /api/live -> tous les matchs en direct, toutes competitions confondues
+// GET /api/live -> tous les matchs en direct, regroupes par championnat
 app.get("/api/live", async (req, res) => {
   const cacheKey = "live:all";
   const cached = cacheGet(cacheKey);
@@ -216,7 +226,7 @@ app.get("/api/live", async (req, res) => {
 
   try {
     const response = await apiGet(`/fixtures?live=all`);
-    const matches = (response || []).slice(0, 40).map(f => ({
+    const flat = (response || []).slice(0, 60).map(f => ({
       date: f.fixture.date,
       status: f.fixture.status.short,
       elapsed: f.fixture.status.elapsed,
@@ -227,14 +237,58 @@ app.get("/api/live", async (req, res) => {
       homeScore: f.goals.home,
       awayScore: f.goals.away,
       comp: f.league.name,
-      country: f.league.country
+      country: f.league.country,
+      compLogo: f.league.logo
     }));
-    const payload = { matches, updatedAt: new Date().toISOString() };
+    // Regroupe par championnat pour l'affichage (fini le "tout mélangé")
+    const groups = {};
+    flat.forEach(m => {
+      const key = m.comp + (m.country ? " (" + m.country + ")" : "");
+      if (!groups[key]) groups[key] = { competition: m.comp, country: m.country, logo: m.compLogo, matches: [] };
+      groups[key].matches.push(m);
+    });
+    const payload = {
+      matches: flat,
+      groups: Object.values(groups).sort((a, b) => b.matches.length - a.matches.length),
+      updatedAt: new Date().toISOString()
+    };
     cacheSet(cacheKey, payload, 60 * 1000); // 60s : donnees live, cache court
     res.json(payload);
   } catch (err) {
     console.error(err.message);
     res.status(502).json({ error: "Impossible de recuperer les matchs en direct", detail: err.message });
+  }
+});
+
+// GET /api/news?zone=ci|afrique|monde -> actualites football en temps reel
+// via Google News RSS (meme principe que le backend KSB Sport).
+const NEWS_QUERIES = {
+  ci: "football Cote d'Ivoire Ligue 1 Elephants",
+  afrique: "CAN 2025 OR \"CAF Champions League\" football Afrique",
+  monde: "football Coupe du monde 2026 OR Premier League OR Ligue 1 transferts"
+};
+app.get("/api/news", async (req, res) => {
+  const zone = ["ci", "afrique", "monde"].includes(req.query.zone) ? req.query.zone : "ci";
+  const cacheKey = `news:${zone}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return res.json(cached);
+
+  try {
+    const q = encodeURIComponent(NEWS_QUERIES[zone]);
+    const url = `https://news.google.com/rss/search?q=${q}&hl=fr&gl=CI&ceid=CI:fr`;
+    const feed = await rssParser.parseURL(url);
+    const items = (feed.items || []).slice(0, 12).map(it => ({
+      title: it.title,
+      link: it.link,
+      date: it.isoDate || it.pubDate,
+      source: (it.title && it.title.includes(" - ")) ? it.title.split(" - ").pop() : (it.creator || "Google News")
+    }));
+    const payload = { zone, items, updatedAt: new Date().toISOString() };
+    cacheSet(cacheKey, payload, 20 * 60 * 1000); // 20 min
+    res.json(payload);
+  } catch (err) {
+    console.error("news:", err.message);
+    res.status(502).json({ error: "Impossible de recuperer les actualites", detail: err.message });
   }
 });
 
