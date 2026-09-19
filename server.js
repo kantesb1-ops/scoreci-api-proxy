@@ -240,41 +240,49 @@ app.get("/api/fixtures/:comp", async (req, res) => {
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 // GET /api/live -> tous les matchs en direct, regroupes par championnat
-app.get("/api/live", async (req, res) => {
+// Fonction partagee : recupere les matchs en direct, regroupes par championnat.
+// Utilisee a la fois par /api/live (vue utilisateur) ET par la detection de
+// buts en arriere-plan, pour ne jamais faire deux appels API distincts pour
+// la meme donnee (le quota gratuit est de 100 requetes/jour seulement).
+async function getLiveFixtures() {
   const cacheKey = "live:all";
   const cached = cacheGet(cacheKey);
-  if (cached) return res.json(cached);
+  if (cached) return cached;
 
+  const response = await apiGet(`/fixtures?live=all`);
+  const flat = (response || []).slice(0, 60).map(f => ({
+    id: f.fixture.id,
+    date: f.fixture.date,
+    status: f.fixture.status.short,
+    elapsed: f.fixture.status.elapsed,
+    home: f.teams.home.name,
+    away: f.teams.away.name,
+    homeLogo: f.teams.home.logo,
+    awayLogo: f.teams.away.logo,
+    homeScore: f.goals.home,
+    awayScore: f.goals.away,
+    comp: f.league.name,
+    country: f.league.country,
+    compLogo: f.league.logo
+  }));
+  const groups = {};
+  flat.forEach(m => {
+    const key = m.comp + (m.country ? " (" + m.country + ")" : "");
+    if (!groups[key]) groups[key] = { competition: m.comp, country: m.country, logo: m.compLogo, matches: [] };
+    groups[key].matches.push(m);
+  });
+  const payload = {
+    matches: flat,
+    groups: Object.values(groups).sort((a, b) => leaguePriority(a.competition) - leaguePriority(b.competition) || b.matches.length - a.matches.length),
+    updatedAt: new Date().toISOString()
+  };
+  cacheSet(cacheKey, payload, 90 * 1000); // 90s : partage entre /api/live et la verification de buts
+  return payload;
+}
+
+app.get("/api/live", async (req, res) => {
   try {
-    const response = await apiGet(`/fixtures?live=all`);
-    const flat = (response || []).slice(0, 60).map(f => ({
-      id: f.fixture.id,
-      date: f.fixture.date,
-      status: f.fixture.status.short,
-      elapsed: f.fixture.status.elapsed,
-      home: f.teams.home.name,
-      away: f.teams.away.name,
-      homeLogo: f.teams.home.logo,
-      awayLogo: f.teams.away.logo,
-      homeScore: f.goals.home,
-      awayScore: f.goals.away,
-      comp: f.league.name,
-      country: f.league.country,
-      compLogo: f.league.logo
-    }));
-    // Regroupe par championnat pour l'affichage (fini le "tout mélangé")
-    const groups = {};
-    flat.forEach(m => {
-      const key = m.comp + (m.country ? " (" + m.country + ")" : "");
-      if (!groups[key]) groups[key] = { competition: m.comp, country: m.country, logo: m.compLogo, matches: [] };
-      groups[key].matches.push(m);
-    });
-    const payload = {
-      matches: flat,
-      groups: Object.values(groups).sort((a, b) => leaguePriority(a.competition) - leaguePriority(b.competition) || b.matches.length - a.matches.length),
-      updatedAt: new Date().toISOString()
-    };
-    cacheSet(cacheKey, payload, 60 * 1000); // 60s : donnees live, cache court
+    const payload = await getLiveFixtures();
     res.json(payload);
   } catch (err) {
     console.error(err.message);
@@ -401,30 +409,32 @@ app.post("/api/notify", async (req, res) => {
 });
 
 // ---- Detection automatique de buts sur les matchs en direct ----
-// Toutes les 60s, compare les scores en direct au dernier releve connu et
-// notifie les abonnes si un score a change.
+// IMPORTANT : le plan gratuit API-FOOTBALL est limite a 100 requetes/JOUR.
+// Cette verification tourne donc toutes les 8 minutes (pas 60s comme avant,
+// qui epuisait le quota en moins de 2h et cassait tout le reste de l'app
+// pour la journee) et reutilise le cache partage avec /api/live plutot que
+// de faire son propre appel API a chaque fois.
 const lastScores = new Map(); // fixtureId -> "home-away"
 async function checkLiveGoals() {
   if (!messaging || !subscribedTokens.size) return;
   try {
-    const response = await apiGet(`/fixtures?live=all`);
-    (response || []).forEach(f => {
-      const id = f.fixture.id;
-      const score = `${f.goals.home ?? 0}-${f.goals.away ?? 0}`;
-      const prev = lastScores.get(id);
+    const data = await getLiveFixtures();
+    (data.matches || []).forEach(f => {
+      const score = `${f.homeScore ?? 0}-${f.awayScore ?? 0}`;
+      const prev = lastScores.get(f.id);
       if (prev && prev !== score) {
         sendNotification(
           "⚽ But !",
-          `${f.teams.home.name} ${score} ${f.teams.away.name} (${f.league.name})`
+          `${f.home} ${score} ${f.away} (${f.comp})`
         ).catch(e => console.error("Notif echouee:", e.message));
       }
-      lastScores.set(id, score);
+      lastScores.set(f.id, score);
     });
   } catch (err) {
     console.error("checkLiveGoals:", err.message);
   }
 }
-setInterval(checkLiveGoals, 60 * 1000);
+setInterval(checkLiveGoals, 20 * 60 * 1000);
 
 app.listen(PORT, () => {
   console.log(`ScoreCI API proxy en ecoute sur le port ${PORT}`);
