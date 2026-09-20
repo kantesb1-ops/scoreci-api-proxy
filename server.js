@@ -66,14 +66,26 @@ const app = express();
 app.use(cors({
   origin: ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS : true
 }));
-app.use(express.json());
+app.use(express.json({ limit: "16kb" }));
+app.disable("x-powered-by");
+app.use(express.static(require("path").join(__dirname, "public")));
+const adminNotifySecret = process.env.NOTIFY_ADMIN_SECRET;
+function requireNotifyAdmin(req, res, next) {
+  const supplied = Buffer.from(req.get("authorization") || "");
+  const expected = Buffer.from("Bearer " + (adminNotifySecret || ""));
+  if (!adminNotifySecret || supplied.length !== expected.length ||
+      !require("crypto").timingSafeEqual(supplied, expected)) {
+    return res.status(401).json({ error: "Authentification administrateur requise" });
+  }
+  next();
+}
 
 // ---- Competitions exposees a ScoreCI ----
 // Chaque entree decrit comment RETROUVER l'id numerique API-FOOTBALL de la
 // competition (on ne code pas les id en dur : on les resout une fois via
 // /leagues puis on les met en cache, pour eviter toute erreur de mapping).
 const COMPETITIONS = {
-  ligue1ci:    { search: "Ligue 1", country: "Ivory Coast" },
+  ligue1ci:    { search: "Ligue 1", country: "Ivory-Coast" },
   can:         { search: "Africa Cup of Nations", country: null },
   cafcl:       { search: "CAF Champions League", country: null },
   qualifs:     { search: "World Cup - Qualification Africa", country: null },
@@ -113,6 +125,7 @@ function cacheGet(key) {
   return hit.value;
 }
 function cacheSet(key, value, ttlMs) {
+  if (cache.size >= 2000) cache.delete(cache.keys().next().value);
   cache.set(key, { value, expires: Date.now() + ttlMs });
 }
 
@@ -120,7 +133,7 @@ function cacheSet(key, value, ttlMs) {
 // Le tableau de bord API-FOOTBALL a montre des pics proches de 150 000/jour
 // (le plafond du plan Mega). Ce compteur local nous permet de reagir AVANT
 // d'epuiser le quota, plutot que de le decouvrir apres coup.
-const DAILY_LIMIT = 150000;
+const DAILY_LIMIT = Math.max(1, Number(process.env.API_DAILY_LIMIT) || 150000);
 const SAFETY_THRESHOLD = 0.85; // 85% : on coupe les taches de fond, on garde l'essentiel
 let requestCount = 0;
 let countResetAt = nextUtcMidnight();
@@ -145,22 +158,37 @@ function trackRequest(path) {
   }
 }
 function quotaSafetyOk() {
+  if (Date.now() >= countResetAt.getTime()) {
+    requestCount = 0;
+    for (const key in requestsByEndpoint) delete requestsByEndpoint[key];
+    countResetAt = nextUtcMidnight();
+  }
   return requestCount < DAILY_LIMIT * SAFETY_THRESHOLD;
 }
 
+// Fusionne les appels simultanes identiques ; ne conserve pas les erreurs.
+const pendingApiRequests = new Map();
 async function apiGet(path) {
-  trackRequest(path);
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "x-apisports-key": API_KEY }
-  });
-  if (!res.ok) {
-    throw new Error(`API-FOOTBALL ${path} -> HTTP ${res.status}`);
-  }
-  const json = await res.json();
-  if (json.errors && Object.keys(json.errors).length) {
-    throw new Error(`API-FOOTBALL error: ${JSON.stringify(json.errors)}`);
-  }
-  return json.response;
+  if (pendingApiRequests.has(path)) return pendingApiRequests.get(path);
+  const promise = (async () => {
+    quotaSafetyOk();
+    if (requestCount >= DAILY_LIMIT) throw new Error("Quota API journalier atteint");
+    trackRequest(path);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    try {
+      const res = await fetch(`${API_BASE}${path}`, {
+        headers: { "x-apisports-key": API_KEY }, signal: controller.signal
+      });
+      if (!res.ok) throw new Error(`API-FOOTBALL HTTP ${res.status}`);
+      const json = await res.json();
+      if (json.errors && Object.keys(json.errors).length) throw new Error("Erreur fournisseur API-FOOTBALL");
+      return json.response;
+    } finally { clearTimeout(timer); }
+  })();
+  pendingApiRequests.set(path, promise);
+  try { return await promise; }
+  finally { pendingApiRequests.delete(path); }
 }
 
 // Resout et met en cache l'id de ligue + la saison en cours pour une competition.
@@ -182,7 +210,7 @@ async function resolveLeague(compId) {
   // exemple) ; sinon on prend le 1er resultat.
   let match;
   if (cfg.country) {
-    match = results.find(r => r.country && r.country.name === cfg.country);
+    match = results.find(r => r.country && r.country.name.replace(/[ -]/g, "").toLowerCase() === cfg.country.replace(/[ -]/g, "").toLowerCase());
     if (!match) {
       throw new Error(`Ligue "${cfg.search}" introuvable pour le pays "${cfg.country}"`);
     }
@@ -255,14 +283,19 @@ app.get("/api/fixtures/:comp", async (req, res) => {
   const scope = req.query.scope === "upcoming" ? "upcoming" : "results";
   if (!COMPETITIONS[compId]) return res.status(404).json({ error: "Competition inconnue" });
 
-  const cacheKey = `fixtures:${compId}:${scope}`;
+  const day = req.query.date || "";
+  if (day && (typeof day !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(day) ||
+      !Number.isFinite(Date.parse(day)) || new Date(day).toISOString().slice(0, 10) !== day))
+    return res.status(400).json({ error: "Date invalide" });
+  const cacheKey = `fixtures:${compId}:${scope}:${day}`;
   const cached = cacheGet(cacheKey);
   if (cached) return res.json(cached);
 
   try {
     const { leagueId, season, name } = await resolveLeague(compId);
     const param = scope === "upcoming" ? "next" : "last";
-    const response = await apiGet(`/fixtures?league=${leagueId}&season=${season}&${param}=8`);
+    const query = day ? `league=${leagueId}&date=${day}&timezone=UTC` : `league=${leagueId}&season=${season}&${param}=8`;
+    const response = await apiGet(`/fixtures?${query}`);
 
     const matches = response.map(f => ({
       id: f.fixture.id,
@@ -276,10 +309,13 @@ app.get("/api/fixtures/:comp", async (req, res) => {
       awayLogo: f.teams.away.logo,
       homeScore: f.goals.home,
       awayScore: f.goals.away,
-      comp: name
+      comp: name,
+      season: f.league.season,
+      round: f.league.round,
+      elapsed: f.fixture.status.elapsed
     }));
 
-    const payload = { comp: compId, scope, matches, updatedAt: new Date().toISOString() };
+    const payload = { comp: compId, scope, name, season, date: day || null, matches, updatedAt: new Date().toISOString() };
     cacheSet(cacheKey, payload, 2 * 60 * 1000); // 2 min
     res.json(payload);
   } catch (err) {
@@ -318,7 +354,7 @@ async function getLiveFixtures() {
   if (cached) return cached;
 
   const response = await apiGet(`/fixtures?live=all`);
-  const flat = (response || []).slice(0, 60).map(f => ({
+  const flat = (response || []).map(f => ({
     id: f.fixture.id,
     date: f.fixture.date,
     status: f.fixture.status.short,
@@ -678,11 +714,17 @@ app.get("/api/standings/by-id/:leagueId", async (req, res) => {
 
 app.post("/api/subscribe", async (req, res) => {
   const { token } = req.body || {};
-  if (!token) return res.status(400).json({ error: "token manquant" });
+  if (!messaging || !db) return res.status(503).json({ error: "Notifications non configurees" });
+  if (typeof token !== "string" || token.length < 20 || token.length > 4096 || /[\/\s]/.test(token))
+    return res.status(400).json({ error: "Jeton invalide" });
   subscribedTokens.add(token);
   if (db) {
-    db.collection("push_tokens").doc(token).set({ subscribedAt: new Date().toISOString() })
-      .catch(err => console.error("Sauvegarde jeton Firestore echouee :", err.message));
+    try {
+      await db.collection("push_tokens").doc(token).set({ subscribedAt: new Date().toISOString() });
+    } catch (err) {
+      subscribedTokens.delete(token);
+      return res.status(503).json({ error: "Enregistrement impossible, veuillez reessayer" });
+    }
   }
   res.json({ ok: true, total: subscribedTokens.size });
 });
@@ -693,21 +735,23 @@ app.post("/api/subscribe", async (req, res) => {
 async function sendNotification(title, body) {
   if (!messaging || !subscribedTokens.size) return { sent: 0 };
   const tokens = Array.from(subscribedTokens);
-  const res = await messaging.sendEachForMulticast({
-    tokens,
-    notification: { title, body },
-    webpush: { fcmOptions: { link: "/" } }
-  });
-  // Nettoie les jetons invalides/expires (en memoire ET dans Firestore)
-  res.responses.forEach((r, i) => {
-    if (!r.success) {
-      subscribedTokens.delete(tokens[i]);
-      if (db) db.collection("push_tokens").doc(tokens[i]).delete().catch(() => {});
-    }
-  });
-  return { sent: res.successCount };
+  let sent = 0;
+  for (let offset = 0; offset < tokens.length; offset += 500) {
+    const batch = tokens.slice(offset, offset + 500);
+    const result = await messaging.sendEachForMulticast({ tokens: batch,
+      notification: { title, body }, webpush: { fcmOptions: { link: "/" } } });
+    sent += result.successCount;
+    result.responses.forEach((r, i) => {
+      if (!r.success && r.error && ["messaging/registration-token-not-registered",
+          "messaging/invalid-registration-token"].includes(r.error.code)) {
+        subscribedTokens.delete(batch[i]);
+        if (db) db.collection("push_tokens").doc(batch[i]).delete().catch(() => {});
+      }
+    });
+  }
+  return { sent };
 }
-app.post("/api/notify", async (req, res) => {
+app.post("/api/notify", requireNotifyAdmin, async (req, res) => {
   if (!messaging) return res.status(503).json({ error: "Notifications non configurees" });
   const { title, body } = req.body || {};
   if (!title || !body) return res.status(400).json({ error: "title et body requis" });
@@ -721,11 +765,8 @@ app.post("/api/notify", async (req, res) => {
 });
 
 // ---- Detection automatique de buts sur les matchs en direct ----
-// IMPORTANT : le plan gratuit API-FOOTBALL est limite a 100 requetes/JOUR.
-// Cette verification tourne donc toutes les 8 minutes (pas 60s comme avant,
-// qui epuisait le quota en moins de 2h et cassait tout le reste de l'app
-// pour la journee) et reutilise le cache partage avec /api/live plutot que
-// de faire son propre appel API a chaque fois.
+// Verification toutes les 20 secondes lorsque des appareils sont abonnes.
+// Le cache live est partage ; ajuster le quota selon le contrat fournisseur.
 const lastScores = new Map(); // fixtureId -> "home-away"
 async function checkLiveGoals() {
   if (!messaging || !subscribedTokens.size) return;
@@ -737,7 +778,7 @@ async function checkLiveGoals() {
       const prev = lastScores.get(f.id);
       if (prev && prev !== score) {
         sendNotification(
-          "⚽ But !",
+          (score.split("-").reduce((a, b) => a + Number(b), 0) > prev.split("-").reduce((a, b) => a + Number(b), 0) ? "⚽ But !" : "Score corrige"),
           `${f.home} ${score} ${f.away} (${f.comp})`
         ).catch(e => console.error("Notif echouee:", e.message));
       }
