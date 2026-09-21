@@ -408,9 +408,9 @@ app.get("/api/live", async (req, res) => {
 // GET /api/news?zone=ci|afrique|monde -> actualites football en temps reel
 // via Google News RSS (meme principe que le backend KSB Sport).
 const NEWS_QUERIES = {
-  ci: "football Cote d'Ivoire Ligue 1 Elephants ASEC Africa Sports",
-  afrique: "CAN 2025 OR \"CAF Champions League\" OR football Afrique transferts",
-  monde: "football Coupe du monde 2026 OR \"Champions League\" OR Premier League OR Liga OR Serie A transferts mercato"
+  ci: '(football "Côte d’Ivoire" OR ASEC OR "Africa Sports" OR "Éléphants") when:7d',
+  afrique: '(football Afrique OR CAN OR "CAF Champions League") when:7d',
+  monde: '(football "Champions League" OR "Premier League" OR Liga OR mercato) when:7d'
 };
 app.get("/api/news", async (req, res) => {
   const zone = ["ci", "afrique", "monde"].includes(req.query.zone) ? req.query.zone : "ci";
@@ -422,8 +422,13 @@ app.get("/api/news", async (req, res) => {
     const q = encodeURIComponent(NEWS_QUERIES[zone]);
     const url = `https://news.google.com/rss/search?q=${q}&hl=fr&gl=CI&ceid=CI:fr`;
     const feed = await rssParser.parseURL(url);
-    const items = (feed.items || []).slice(0, 15).map(it => ({
+    const now = Date.now();
+    const items = (feed.items || []).filter(it => {
+      const date = Date.parse(it.isoDate || it.pubDate);
+      return Number.isFinite(date) && date <= now + 300000 && date >= now - 7 * 86400000;
+    }).sort((a, b) => Date.parse(b.isoDate || b.pubDate) - Date.parse(a.isoDate || a.pubDate)).slice(0, 25).map(it => ({
       title: it.title,
+      summary: String(it.contentSnippet || it.summary || "").slice(0, 1600),
       link: it.link,
       date: it.isoDate || it.pubDate,
       source: (it.title && it.title.includes(" - ")) ? it.title.split(" - ").pop() : (it.creator || "Google News")
