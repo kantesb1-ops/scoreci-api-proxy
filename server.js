@@ -294,8 +294,17 @@ app.get("/api/fixtures/:comp", async (req, res) => {
   try {
     const { leagueId, season, name } = await resolveLeague(compId);
     const param = scope === "upcoming" ? "next" : "last";
-    const query = day ? `league=${leagueId}&date=${day}&timezone=UTC` : `league=${leagueId}&season=${season}&${param}=8`;
-    const response = await apiGet(`/fixtures?${query}`);
+    const query = day ? `date=${day}&timezone=UTC` : `league=${leagueId}&season=${season}&${param}=8`;
+    // A daily query spans seasons. Reuse it across competitions, then filter
+    // by the resolved league ID instead of combining league with no season.
+    const dailyKey = `fixtures-day:${day}`;
+    let response = day ? cacheGet(dailyKey) : null;
+    if (!response) {
+      response = await apiGet(`/fixtures?${query}`);
+      if (!Array.isArray(response)) throw new Error("Reponse fournisseur invalide");
+      if (day) cacheSet(dailyKey, response, 2 * 60 * 1000);
+    }
+    if (day) response = response.filter(f => String(f.league.id) === String(leagueId));
 
     const matches = response.map(f => ({
       id: f.fixture.id,
