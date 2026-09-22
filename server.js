@@ -207,7 +207,7 @@ async function resolveLeague(compId) {
   }
   // Si un pays est precise, on exige une correspondance exacte (sinon on
   // risquerait de resoudre "Ligue 1" vers la France au lieu de la CI, par
-  // exemple) ; sinon on prend le 1er resultat.
+  // exemple) ; sinon on exige le nom exact de la competition.
   let match;
   if (cfg.country) {
     match = results.find(r => r.country && r.country.name.replace(/[ -]/g, "").toLowerCase() === cfg.country.replace(/[ -]/g, "").toLowerCase());
@@ -215,7 +215,10 @@ async function resolveLeague(compId) {
       throw new Error(`Ligue "${cfg.search}" introuvable pour le pays "${cfg.country}"`);
     }
   } else {
-    match = results[0];
+    // Une recherche partielle peut confondre CAF et CONCACAF.
+    const exact = results.filter(r => r.league && r.league.name.trim().toLowerCase() === cfg.search.toLowerCase());
+    if (exact.length !== 1) throw new Error(`Competition exacte introuvable ou ambigue: ${cfg.search}`);
+    match = exact[0];
   }
 
   const currentSeason = (match.seasons || []).find(s => s.current) || (match.seasons || []).slice(-1)[0];
