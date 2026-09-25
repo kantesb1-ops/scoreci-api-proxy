@@ -496,17 +496,19 @@ const NEWS_QUERIES = {
     'mercato joueurs africains football when:7d'
   ],
   monde: [
-    'football actualité when:7d',
     '"Champions League" football when:7d',
     '"Premier League" football when:7d',
-    'Liga football when:7d',
+    '"La Liga" football when:7d',
     '"Serie A" football when:7d',
-    'mercato football when:7d'
+    'Bundesliga football when:7d',
+    '"Ligue 1" football France when:7d',
+    'FIFA football international when:7d',
+    'mercato football Europe when:7d'
   ]
 };
 app.get("/api/news", async (req, res) => {
   const zone = ["ci", "afrique", "monde"].includes(req.query.zone) ? req.query.zone : "ci";
-  const cacheKey = `news:v2:${zone}`;
+  const cacheKey = `news:v3:${zone}`;
   const cached = cacheGet(cacheKey);
   if (cached) return res.json(cached);
 
