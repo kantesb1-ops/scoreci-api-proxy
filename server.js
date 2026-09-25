@@ -824,7 +824,18 @@ app.get("/api/standings/by-id/:leagueId", async (req, res) => {
 
   try {
     const response = await apiGet(`/standings?league=${leagueId}&season=${season}`);
-    const leagueName = response?.[0]?.league?.name || "Championnat";
+    // Le endpoint standings peut renvoyer un tableau vide pour les coupes,
+    // qualifications ou competitions non couvertes. Dans ce cas, recuperer
+    // quand meme le vrai nom de la competition au lieu d'afficher
+    // le generique "Championnat".
+    let leagueName = response?.[0]?.league?.name || null;
+    if (!leagueName) {
+      try {
+        const leagueInfo = await apiGet(`/leagues?id=${encodeURIComponent(leagueId)}`);
+        leagueName = leagueInfo?.[0]?.league?.name || null;
+      } catch (_) {}
+    }
+    leagueName = leagueName || "Compétition";
     const groups = response?.[0]?.league?.standings || [];
     const groupPayloads = groups.map(g => ({
       label: g[0]?.group || null,
