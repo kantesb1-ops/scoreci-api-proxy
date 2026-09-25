@@ -207,7 +207,7 @@ async function resolveLeague(compId) {
   }
   // Si un pays est precise, on exige une correspondance exacte (sinon on
   // risquerait de resoudre "Ligue 1" vers la France au lieu de la CI, par
-  // exemple) ; sinon on exige le nom exact de la competition.
+  // exemple) ; sinon on prend le 1er resultat.
   let match;
   if (cfg.country) {
     match = results.find(r => r.country && r.country.name.replace(/[ -]/g, "").toLowerCase() === cfg.country.replace(/[ -]/g, "").toLowerCase());
@@ -215,17 +215,17 @@ async function resolveLeague(compId) {
       throw new Error(`Ligue "${cfg.search}" introuvable pour le pays "${cfg.country}"`);
     }
   } else {
-    // Une recherche partielle peut confondre CAF et CONCACAF.
-    const exact = results.filter(r => r.league && r.league.name.trim().toLowerCase() === cfg.search.toLowerCase());
-    if (exact.length !== 1) throw new Error(`Competition exacte introuvable ou ambigue: ${cfg.search}`);
-    match = exact[0];
+    match = results[0];
   }
 
-  const currentSeason = (match.seasons || []).find(s => s.current) || (match.seasons || []).slice(-1)[0];
+  const activeSeason = (match.seasons || []).find(s => s.current);
+  const fallbackSeason = (match.seasons || []).slice(-1)[0];
+  const selectedSeason = activeSeason || fallbackSeason;
   const info = {
     leagueId: match.league.id,
-    season: currentSeason ? currentSeason.year : new Date().getFullYear(),
-    name: match.league.name
+    season: selectedSeason ? selectedSeason.year : new Date().getFullYear(),
+    name: match.league.name,
+    current: Boolean(activeSeason)
   };
   cacheSet(cacheKey, info, 24 * 60 * 60 * 1000); // 24h : les ids ne changent pas
   return info;
@@ -241,7 +241,10 @@ app.get("/api/standings/:comp", async (req, res) => {
   if (cached) return res.json(cached);
 
   try {
-    const { leagueId, season, name } = await resolveLeague(compId);
+    const { leagueId, season, name, current } = await resolveLeague(compId);
+    if (!current) {
+      return res.status(409).json({ error: "Competition non active actuellement", comp: compId, season });
+    }
     const response = await apiGet(`/standings?league=${leagueId}&season=${season}`);
 
     const groups = response?.[0]?.league?.standings || [];
@@ -277,6 +280,73 @@ app.get("/api/standings/:comp", async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(502).json({ error: "Impossible de recuperer le classement", detail: err.message });
+  }
+});
+
+// GET /api/day-fixtures?date=YYYY-MM-DD
+// Flux principal ScoreCI : tous les matchs reels de la journee, sans se limiter
+// a une liste de competitions. C'est cette route qui alimente Hier/Aujourd'hui/Demain.
+app.get("/api/day-fixtures", async (req, res) => {
+  const day = req.query.date || "";
+  if (typeof day !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(day) ||
+      !Number.isFinite(Date.parse(day)) || new Date(day).toISOString().slice(0, 10) !== day) {
+    return res.status(400).json({ error: "Date invalide" });
+  }
+  const cacheKey = `day-feed:${day}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return res.json(cached);
+
+  try {
+    const response = await apiGet(`/fixtures?date=${day}&timezone=Africa%2FAbidjan`);
+    if (!Array.isArray(response)) throw new Error("Reponse fournisseur invalide");
+    const matches = response.map(f => ({
+      id: f.fixture.id,
+      date: f.fixture.date,
+      status: f.fixture.status.short,
+      elapsed: f.fixture.status.elapsed,
+      home: f.teams.home.name,
+      homeId: f.teams.home.id,
+      away: f.teams.away.name,
+      awayId: f.teams.away.id,
+      homeLogo: f.teams.home.logo,
+      awayLogo: f.teams.away.logo,
+      homeScore: f.goals.home,
+      awayScore: f.goals.away,
+      comp: f.league.name,
+      compId: f.league.id,
+      compLogo: f.league.logo,
+      country: f.league.country || "",
+      flag: f.league.flag || null,
+      season: f.league.season,
+      round: f.league.round
+    }));
+
+    const groupsMap = new Map();
+    matches.forEach(m => {
+      const key = `${m.compId}:${m.comp}`;
+      if (!groupsMap.has(key)) groupsMap.set(key, {
+        competition: m.comp,
+        competitionId: m.compId,
+        logo: m.compLogo,
+        country: m.country,
+        flag: m.flag,
+        matches: []
+      });
+      groupsMap.get(key).matches.push(m);
+    });
+    const groups = Array.from(groupsMap.values()).sort((a, b) => {
+      const ap = leaguePriority(a.competition), bp = leaguePriority(b.competition);
+      if (ap !== bp) return ap - bp;
+      if (a.country === "Ivory-Coast" && b.country !== "Ivory-Coast") return -1;
+      if (b.country === "Ivory-Coast" && a.country !== "Ivory-Coast") return 1;
+      return a.competition.localeCompare(b.competition);
+    });
+    const payload = { date: day, matches, groups, updatedAt: new Date().toISOString() };
+    cacheSet(cacheKey, payload, 60 * 1000);
+    res.json(payload);
+  } catch (err) {
+    console.error("day fixtures:", err.message);
+    res.status(502).json({ error: "Impossible de recuperer les matchs de la journee", detail: err.message });
   }
 });
 
@@ -411,9 +481,9 @@ app.get("/api/live", async (req, res) => {
 // GET /api/news?zone=ci|afrique|monde -> actualites football en temps reel
 // via Google News RSS (meme principe que le backend KSB Sport).
 const NEWS_QUERIES = {
-  ci: '(football "Côte d’Ivoire" OR ASEC OR "Africa Sports" OR "Éléphants") when:7d',
-  afrique: '(football Afrique OR CAN OR "CAF Champions League") when:7d',
-  monde: '(football "Champions League" OR "Premier League" OR Liga OR mercato) when:7d'
+  ci: "football Cote d'Ivoire Ligue 1 Elephants ASEC Africa Sports",
+  afrique: "football Afrique CAF Champions League selections africaines transferts",
+  monde: "football Coupe du monde 2026 OR \"Champions League\" OR Premier League OR Liga OR Serie A transferts mercato"
 };
 app.get("/api/news", async (req, res) => {
   const zone = ["ci", "afrique", "monde"].includes(req.query.zone) ? req.query.zone : "ci";
@@ -425,13 +495,8 @@ app.get("/api/news", async (req, res) => {
     const q = encodeURIComponent(NEWS_QUERIES[zone]);
     const url = `https://news.google.com/rss/search?q=${q}&hl=fr&gl=CI&ceid=CI:fr`;
     const feed = await rssParser.parseURL(url);
-    const now = Date.now();
-    const items = (feed.items || []).filter(it => {
-      const date = Date.parse(it.isoDate || it.pubDate);
-      return Number.isFinite(date) && date <= now + 300000 && date >= now - 7 * 86400000;
-    }).sort((a, b) => Date.parse(b.isoDate || b.pubDate) - Date.parse(a.isoDate || a.pubDate)).slice(0, 25).map(it => ({
+    const items = (feed.items || []).slice(0, 15).map(it => ({
       title: it.title,
-      summary: String(it.contentSnippet || it.summary || "").slice(0, 1600),
       link: it.link,
       date: it.isoDate || it.pubDate,
       source: (it.title && it.title.includes(" - ")) ? it.title.split(" - ").pop() : (it.creator || "Google News")
