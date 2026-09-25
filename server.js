@@ -481,28 +481,69 @@ app.get("/api/live", async (req, res) => {
 // GET /api/news?zone=ci|afrique|monde -> actualites football en temps reel
 // via Google News RSS (meme principe que le backend KSB Sport).
 const NEWS_QUERIES = {
-  ci: "football Cote d'Ivoire Ligue 1 Elephants ASEC Africa Sports",
-  afrique: "football Afrique CAF Champions League selections africaines transferts",
-  monde: "football Coupe du monde 2026 OR \"Champions League\" OR Premier League OR Liga OR Serie A transferts mercato"
+  ci: [
+    'football "Côte d Ivoire" when:7d',
+    '"Éléphants" football when:7d',
+    '"ASEC Mimosas" when:7d',
+    '"Africa Sports" football when:7d',
+    '"Ligue 1" "Côte d Ivoire" football when:7d'
+  ],
+  afrique: [
+    'football Afrique CAF when:7d',
+    '"CAF Champions League" football when:7d',
+    '"Coupe de la Confédération CAF" football when:7d',
+    'sélections africaines football when:7d',
+    'mercato joueurs africains football when:7d'
+  ],
+  monde: [
+    'football actualité when:7d',
+    '"Champions League" football when:7d',
+    '"Premier League" football when:7d',
+    'Liga football when:7d',
+    '"Serie A" football when:7d',
+    'mercato football when:7d'
+  ]
 };
 app.get("/api/news", async (req, res) => {
   const zone = ["ci", "afrique", "monde"].includes(req.query.zone) ? req.query.zone : "ci";
-  const cacheKey = `news:${zone}`;
+  const cacheKey = `news:v2:${zone}`;
   const cached = cacheGet(cacheKey);
   if (cached) return res.json(cached);
 
   try {
-    const q = encodeURIComponent(NEWS_QUERIES[zone]);
-    const url = `https://news.google.com/rss/search?q=${q}&hl=fr&gl=CI&ceid=CI:fr`;
-    const feed = await rssParser.parseURL(url);
-    const items = (feed.items || []).slice(0, 15).map(it => ({
-      title: it.title,
-      link: it.link,
-      date: it.isoDate || it.pubDate,
-      source: (it.title && it.title.includes(" - ")) ? it.title.split(" - ").pop() : (it.creator || "Google News")
+    const queries = NEWS_QUERIES[zone] || NEWS_QUERIES.ci;
+    const feeds = await Promise.all(queries.map(async query => {
+      const q = encodeURIComponent(query);
+      const url = `https://news.google.com/rss/search?q=${q}&hl=fr&gl=CI&ceid=CI:fr`;
+      try { return await rssParser.parseURL(url); }
+      catch (e) { console.warn('news feed:', query, e.message); return { items: [] }; }
     }));
-    const payload = { zone, items, updatedAt: new Date().toISOString() };
-    cacheSet(cacheKey, payload, 8 * 60 * 1000); // 8 min : plus a jour
+
+    const seen = new Set();
+    const now = Date.now();
+    const minDate = now - 7 * 24 * 60 * 60 * 1000;
+    const items = [];
+    feeds.forEach(feed => {
+      (feed.items || []).forEach(it => {
+        const dateValue = it.isoDate || it.pubDate;
+        const ts = Date.parse(dateValue || '');
+        if (!Number.isFinite(ts) || ts < minDate || ts > now + 5 * 60 * 1000) return;
+        const rawTitle = String(it.title || '').trim();
+        const key = rawTitle.toLowerCase().replace(/\s+/g, ' ');
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        items.push({
+          title: rawTitle,
+          link: it.link,
+          date: dateValue,
+          source: rawTitle.includes(' - ') ? rawTitle.split(' - ').pop() : (it.creator || 'Google News'),
+          summary: it.contentSnippet || it.content || it.summary || ''
+        });
+      });
+    });
+    items.sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+    const payload = { zone, items: items.slice(0, 50), updatedAt: new Date().toISOString() };
+    cacheSet(cacheKey, payload, 5 * 60 * 1000);
     res.json(payload);
   } catch (err) {
     console.error("news:", err.message);
