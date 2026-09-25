@@ -392,6 +392,7 @@ app.get("/api/fixtures/:comp", async (req, res) => {
       homeScore: f.goals.home,
       awayScore: f.goals.away,
       comp: name,
+      compId: f.league.id,
       season: f.league.season,
       round: f.league.round,
       elapsed: f.fixture.status.elapsed
@@ -450,8 +451,11 @@ async function getLiveFixtures() {
     homeScore: f.goals.home,
     awayScore: f.goals.away,
     comp: f.league.name,
+    compId: f.league.id,
     country: f.league.country,
-    compLogo: f.league.logo
+    compLogo: f.league.logo,
+    season: f.league.season,
+    round: f.league.round
   }));
   const groups = {};
   flat.forEach(m => {
@@ -628,7 +632,9 @@ app.get("/api/fixture/:id", async (req, res) => {
       homeScore: f.goals.home,
       awayScore: f.goals.away,
       comp: f.league.name,
+      compId: f.league.id,
       country: f.league.country,
+      season: f.league.season,
       round: f.league.round,
       events,
       lineups,
