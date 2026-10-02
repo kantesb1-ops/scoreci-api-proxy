@@ -82,36 +82,80 @@ app.use(express.json({ limit: "16kb" }));
 // resultats gardes en memoire. Ne bloque jamais une reponse.
 // ---------------------------------------------------------------------------
 const LOGO_HOST = "https://media.api-sports.io/";
-const logoStatus = new Map();          // url -> true (remplacement) | false (vrai logo) | "pending"
+const logoStatus = new Map();          // url -> true (remplacement) | false (vrai logo) | "pending" | "learning"
 const logoQueue = [];
 let logoWorkers = 0;
-let placeholderSig = null;             // { len, hash }
+let placeholderSig = null;             // { len, hash } appris a partir des donnees
+const sizeSeen = new Map();            // taille -> [urls] pendant l'apprentissage
+let logoSaveTimer = null;
 
 function sha1(buf) { return require("crypto").createHash("sha1").update(buf).digest("hex"); }
 
-async function learnLogoPlaceholder() {
+// Memoire Firestore : survit aux mises en veille de Render.
+async function loadLogoMemory() {
+  if (!db) { console.log("[LOGOS] Firestore indisponible : apprentissage en memoire seulement."); return; }
   try {
-    const r = await fetch(LOGO_HOST + "football/teams/987654321.png", { timeout: 8000 });
-    if (!r.ok) { console.log(`[LOGOS] Pas d'image de remplacement (HTTP ${r.status}) : filtre inactif.`); return; }
-    const buf = await r.buffer();
-    placeholderSig = { len: buf.length, hash: sha1(buf) };
-    console.log(`[LOGOS] Image de remplacement reconnue (${buf.length} octets) : filtre actif.`);
+    const doc = await db.collection("system").doc("logoPlaceholders").get();
+    if (!doc.exists) { console.log("[LOGOS] Aucune memoire : apprentissage en cours."); return; }
+    const v = doc.data() || {};
+    if (v.len && v.hash) placeholderSig = { len: v.len, hash: v.hash };
+    (v.urls || []).forEach(u => logoStatus.set(u, true));
+    console.log(`[LOGOS] Memoire chargee : ${(v.urls || []).length} logo(s) de remplacement connus.`);
   } catch (e) {
-    console.log("[LOGOS] Verification indisponible : " + e.message);
+    console.log("[LOGOS] Memoire illisible : " + e.message);
   }
+}
+
+function saveLogoMemory() {
+  if (!db || !placeholderSig) return;
+  clearTimeout(logoSaveTimer);
+  logoSaveTimer = setTimeout(() => {
+    const urls = [...logoStatus].filter(([, v]) => v === true).map(([u]) => u).slice(-15000);
+    db.collection("system").doc("logoPlaceholders")
+      .set({ len: placeholderSig.len, hash: placeholderSig.hash, urls, updatedAt: new Date().toISOString() })
+      .catch(e => console.log("[LOGOS] Sauvegarde impossible : " + e.message));
+  }, 10000);
+}
+
+async function fetchBuffer(url) { const r = await fetch(url, { timeout: 8000 }); return r.buffer(); }
+
+// L'image « image not available » est identique pour tous les clubs sans logo :
+// des que 3 logos differents ont exactement le meme contenu, c'est elle.
+async function learnFrom(len, urls) {
+  try {
+    const hashes = await Promise.all(urls.slice(0, 3).map(async u => sha1(await fetchBuffer(u))));
+    if (hashes[0] !== hashes[1] || hashes[1] !== hashes[2]) return false;
+    placeholderSig = { len, hash: hashes[0] };
+    for (const [l, list] of sizeSeen) list.forEach(u => logoStatus.set(u, l === len));
+    sizeSeen.clear();
+    console.log(`[LOGOS] Image de remplacement apprise (${len} octets) : filtre actif.`);
+    saveLogoMemory();
+    return true;
+  } catch (_) { return false; }
 }
 
 async function checkLogo(url) {
   try {
     const head = await fetch(url, { method: "HEAD", timeout: 6000 });
-    if (!head.ok) { logoStatus.set(url, true); return; }          // 404 : pas de logo
-    const len = Number(head.headers.get("content-length"));
-    if (len && len !== placeholderSig.len) { logoStatus.set(url, false); return; }
-    const r = await fetch(url, { timeout: 8000 });                    // meme taille : on confirme
-    const buf = await r.buffer();
-    logoStatus.set(url, buf.length === placeholderSig.len && sha1(buf) === placeholderSig.hash);
+    if (!head.ok) { logoStatus.set(url, true); saveLogoMemory(); return; }   // 404 : pas de logo
+    let len = Number(head.headers.get("content-length"));
+    let buf = null;
+    if (!len) { buf = await fetchBuffer(url); len = buf.length; }
+    if (placeholderSig) {
+      if (len !== placeholderSig.len) { logoStatus.set(url, false); return; }
+      buf = buf || await fetchBuffer(url);
+      const isPlaceholder = sha1(buf) === placeholderSig.hash;
+      logoStatus.set(url, isPlaceholder);
+      if (isPlaceholder) saveLogoMemory();
+      return;
+    }
+    const list = sizeSeen.get(len) || [];
+    list.push(url); sizeSeen.set(len, list);
+    logoStatus.set(url, "learning");
+    if (list.length >= 3 && list.length <= 9 && list.length % 3 === 0) await learnFrom(len, list.slice(-3));
+    if (sizeSeen.size > 5000) sizeSeen.clear();
   } catch (_) {
-    logoStatus.delete(url);                                           // reessai plus tard
+    logoStatus.delete(url);                                                  // reessai plus tard
   }
 }
 
@@ -144,12 +188,11 @@ function scrubLogos(node, depth) {
 app.use((req, res, next) => {
   const send = res.json.bind(res);
   res.json = (body) => {
-    if (placeholderSig) { try { scrubLogos(body, 0); pumpLogoQueue(); } catch (_) {} }
+    try { scrubLogos(body, 0); pumpLogoQueue(); } catch (_) {}
     return send(body);
   };
   next();
 });
-learnLogoPlaceholder();
 app.disable("x-powered-by");
 app.use(express.static(require("path").join(__dirname, "public")));
 const adminNotifySecret = process.env.NOTIFY_ADMIN_SECRET;
@@ -1027,4 +1070,5 @@ setInterval(checkLiveGoals, 20 * 1000); // plan Mega : detection de buts quasi i
 
 app.listen(PORT, () => {
   console.log(`ScoreCI API proxy en ecoute sur le port ${PORT}`);
+  loadLogoMemory();
 });
