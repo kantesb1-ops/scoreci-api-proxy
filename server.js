@@ -15,6 +15,13 @@ const RSSParser = require("rss-parser");
 const rssParser = new RSSParser();
 
 const API_KEY = process.env.API_FOOTBALL_KEY;
+if (!API_KEY) {
+  console.error("[CONFIG] API_FOOTBALL_KEY manquante dans Environment (Render).");
+} else if (!/^[a-f0-9]{32}$/i.test(API_KEY)) {
+  console.error(`[CONFIG] API_FOOTBALL_KEY suspecte : ${API_KEY.length} caracteres (32 attendus) ou espace/caractere invalide.`);
+} else {
+  console.log(`[CONFIG] API_FOOTBALL_KEY chargee (...${API_KEY.slice(-4)}).`);
+}
 const PORT = process.env.PORT || 3001;
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean);
 const API_BASE = "https://v3.football.api-sports.io";
@@ -180,9 +187,19 @@ async function apiGet(path) {
       const res = await fetch(`${API_BASE}${path}`, {
         headers: { "x-apisports-key": API_KEY }, signal: controller.signal
       });
-      if (!res.ok) throw new Error(`API-FOOTBALL HTTP ${res.status}`);
+      if (!res.ok) {
+        // Journalise la raison exacte renvoyee par API-FOOTBALL (jamais la cle).
+        let body = "";
+        try { body = (await res.text()).slice(0, 300); } catch (_) {}
+        console.error(`[API-FOOTBALL] HTTP ${res.status} sur ${path.split("?")[0]} : ${body || "(reponse vide)"}`);
+        throw new Error(`API-FOOTBALL HTTP ${res.status}`);
+      }
       const json = await res.json();
-      if (json.errors && Object.keys(json.errors).length) throw new Error("Erreur fournisseur API-FOOTBALL");
+      if (json.errors && Object.keys(json.errors).length) {
+        const reason = JSON.stringify(json.errors).slice(0, 300);
+        console.error(`[API-FOOTBALL] Erreur fournisseur sur ${path.split("?")[0]} : ${reason}`);
+        throw new Error("Erreur fournisseur API-FOOTBALL");
+      }
       return json.response;
     } finally { clearTimeout(timer); }
   })();
