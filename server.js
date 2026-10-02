@@ -847,6 +847,52 @@ app.get("/api/team/:id", async (req, res) => {
   }
 });
 
+// GET /api/team-form?ids=1,2,3 -> dernier resultat + prochain match de chaque club suivi
+// (page Favoris). 2 requetes API par club, gardees 30 min en memoire. Max 20 clubs.
+function mapTeamFixture(f) {
+  if (!f) return null;
+  return {
+    id: f.fixture.id, date: f.fixture.date, status: f.fixture.status.short, elapsed: f.fixture.status.elapsed,
+    home: f.teams.home.name, homeId: f.teams.home.id, away: f.teams.away.name, awayId: f.teams.away.id,
+    homeLogo: f.teams.home.logo, awayLogo: f.teams.away.logo,
+    homeScore: f.goals.home, awayScore: f.goals.away,
+    comp: f.league.name, compId: f.league.id, compLogo: f.league.logo,
+    country: f.league.country || "", season: f.league.season, round: f.league.round
+  };
+}
+app.get("/api/team-form", async (req, res) => {
+  const ids = String(req.query.ids || "").split(",").map(x => x.trim())
+    .filter(x => /^\d{1,9}$/.test(x)).filter((x, i, a) => a.indexOf(x) === i).slice(0, 20);
+  if (!ids.length) return res.json({ teams: [] });
+  try {
+    const teams = await Promise.all(ids.map(async id => {
+      const cacheKey = `team-form:${id}`;
+      const cached = cacheGet(cacheKey);
+      if (cached) return cached;
+      const [lastRes, nextRes] = await Promise.all([
+        apiGet(`/fixtures?team=${id}&last=1&timezone=Africa%2FAbidjan`).catch(() => []),
+        apiGet(`/fixtures?team=${id}&next=1&timezone=Africa%2FAbidjan`).catch(() => [])
+      ]);
+      const last = mapTeamFixture(lastRes && lastRes[0]);
+      const next = mapTeamFixture(nextRes && nextRes[0]);
+      const ref = last || next;
+      const side = ref ? (String(ref.homeId) === id ? "home" : "away") : null;
+      const payload = {
+        id: Number(id),
+        name: ref ? ref[side] : null,
+        logo: ref ? ref[side + "Logo"] : null,
+        last, next
+      };
+      cacheSet(cacheKey, payload, 30 * 60 * 1000);
+      return payload;
+    }));
+    res.json({ teams, updatedAt: new Date().toISOString() });
+  } catch (err) {
+    console.error("team form:", err.message);
+    res.status(502).json({ error: "Impossible de recuperer les clubs suivis", detail: err.message });
+  }
+});
+
 // GET /api/player/:id -> fiche joueur (profil + stats saison)
 app.get("/api/player/:id", async (req, res) => {
   const id = req.params.id;
