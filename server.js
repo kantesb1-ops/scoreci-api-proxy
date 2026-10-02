@@ -74,6 +74,82 @@ app.use(cors({
   origin: ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS : true
 }));
 app.use(express.json({ limit: "16kb" }));
+
+// ---------------------------------------------------------------------------
+// Logos « image not available » d'API-Sports -> champ vide.
+// L'application affiche alors un monogramme du club a la place de l'appareil photo.
+// Verification par requetes HEAD sur le CDN media (ne consomme pas le quota API),
+// resultats gardes en memoire. Ne bloque jamais une reponse.
+// ---------------------------------------------------------------------------
+const LOGO_HOST = "https://media.api-sports.io/";
+const logoStatus = new Map();          // url -> true (remplacement) | false (vrai logo) | "pending"
+const logoQueue = [];
+let logoWorkers = 0;
+let placeholderSig = null;             // { len, hash }
+
+function sha1(buf) { return require("crypto").createHash("sha1").update(buf).digest("hex"); }
+
+async function learnLogoPlaceholder() {
+  try {
+    const r = await fetch(LOGO_HOST + "football/teams/987654321.png", { timeout: 8000 });
+    if (!r.ok) { console.log(`[LOGOS] Pas d'image de remplacement (HTTP ${r.status}) : filtre inactif.`); return; }
+    const buf = await r.buffer();
+    placeholderSig = { len: buf.length, hash: sha1(buf) };
+    console.log(`[LOGOS] Image de remplacement reconnue (${buf.length} octets) : filtre actif.`);
+  } catch (e) {
+    console.log("[LOGOS] Verification indisponible : " + e.message);
+  }
+}
+
+async function checkLogo(url) {
+  try {
+    const head = await fetch(url, { method: "HEAD", timeout: 6000 });
+    if (!head.ok) { logoStatus.set(url, true); return; }          // 404 : pas de logo
+    const len = Number(head.headers.get("content-length"));
+    if (len && len !== placeholderSig.len) { logoStatus.set(url, false); return; }
+    const r = await fetch(url, { timeout: 8000 });                    // meme taille : on confirme
+    const buf = await r.buffer();
+    logoStatus.set(url, buf.length === placeholderSig.len && sha1(buf) === placeholderSig.hash);
+  } catch (_) {
+    logoStatus.delete(url);                                           // reessai plus tard
+  }
+}
+
+function pumpLogoQueue() {
+  while (logoWorkers < 6 && logoQueue.length) {
+    const url = logoQueue.shift();
+    logoWorkers++;
+    checkLogo(url).finally(() => { logoWorkers--; pumpLogoQueue(); });
+  }
+}
+
+function scrubLogos(node, depth) {
+  if (!node || typeof node !== "object" || depth > 8) return;
+  if (Array.isArray(node)) { for (const item of node) scrubLogos(item, depth + 1); return; }
+  for (const key of Object.keys(node)) {
+    const value = node[key];
+    if (typeof value === "string" && /logo$/i.test(key) && value.startsWith(LOGO_HOST)) {
+      const status = logoStatus.get(value);
+      if (status === true) node[key] = "";
+      else if (status === undefined && logoQueue.length < 2000) {
+        if (logoStatus.size > 20000) logoStatus.clear();
+        logoStatus.set(value, "pending"); logoQueue.push(value);
+      }
+    } else if (value && typeof value === "object") {
+      scrubLogos(value, depth + 1);
+    }
+  }
+}
+
+app.use((req, res, next) => {
+  const send = res.json.bind(res);
+  res.json = (body) => {
+    if (placeholderSig) { try { scrubLogos(body, 0); pumpLogoQueue(); } catch (_) {} }
+    return send(body);
+  };
+  next();
+});
+learnLogoPlaceholder();
 app.disable("x-powered-by");
 app.use(express.static(require("path").join(__dirname, "public")));
 const adminNotifySecret = process.env.NOTIFY_ADMIN_SECRET;
